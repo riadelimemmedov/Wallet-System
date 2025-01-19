@@ -128,6 +128,7 @@ func TestMain(m *testing.M) {
 	}
 	var err error
 	testDB, err = NewTestDB(config)
+	fmt.Println("Tested connection to db...")
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
