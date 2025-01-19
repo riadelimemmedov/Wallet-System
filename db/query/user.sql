@@ -5,9 +5,10 @@ INSERT INTO users (
     email,
     first_name,
     last_name,
-    phone_number
+    phone_number,
+    profile_image_url
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5, $6, $7
 ) RETURNING *;
 
 -- name: GetUser :one
@@ -27,6 +28,7 @@ SET
     first_name = COALESCE(sqlc.narg('first_name'), first_name),
     last_name = COALESCE(sqlc.narg('last_name'), last_name),
     phone_number = COALESCE(sqlc.narg('phone_number'), phone_number),
+    profile_image_url = COALESCE(sqlc.narg('profile_image_url'), profile_image_url),
     is_active = COALESCE(sqlc.narg('is_active'), is_active)
 WHERE user_id = sqlc.arg('user_id')
 RETURNING *;
