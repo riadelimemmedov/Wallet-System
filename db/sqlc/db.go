@@ -9,22 +9,7 @@ import (
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"fmt"
 )
-
-const (
-	DbDriver = "postgres"
-	DbSource = "postgresql://postgres:123321@localhost:6432/simple_bank?sslmode=disable"
-)
-
-func NewDBPool() (*pgxpool.Pool, error) {
-	pool, err := pgxpool.Connect(context.Background(), DbSource)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %v", err)
-	}
-	return pool, nil
-}
 
 type DBTX interface {
 	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)

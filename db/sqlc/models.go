@@ -89,15 +89,16 @@ type TransactionType struct {
 }
 
 type User struct {
-	UserID       int32          `json:"user_id"`
-	Username     string         `json:"username"`
-	PasswordHash string         `json:"password_hash"`
-	Email        sql.NullString `json:"email"`
-	FirstName    sql.NullString `json:"first_name"`
-	LastName     sql.NullString `json:"last_name"`
-	PhoneNumber  sql.NullString `json:"phone_number"`
-	IsActive     bool           `json:"is_active"`
-	LastLogin    time.Time      `json:"last_login"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
+	UserID          int32          `json:"user_id"`
+	Username        string         `json:"username"`
+	PasswordHash    string         `json:"password_hash"`
+	Email           sql.NullString `json:"email"`
+	FirstName       sql.NullString `json:"first_name"`
+	LastName        sql.NullString `json:"last_name"`
+	PhoneNumber     sql.NullString `json:"phone_number"`
+	ProfileImageUrl sql.NullString `json:"profile_image_url"`
+	IsActive        bool           `json:"is_active"`
+	LastLogin       time.Time      `json:"last_login"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
 }
