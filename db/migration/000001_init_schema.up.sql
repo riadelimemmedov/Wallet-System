@@ -7,6 +7,7 @@ CREATE TABLE users (
     first_name VARCHAR(50),
     last_name VARCHAR(50),
     phone_number VARCHAR(20),
+    profile_image_url VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT true,
     last_login TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

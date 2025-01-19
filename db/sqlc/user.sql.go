@@ -17,19 +17,21 @@ INSERT INTO users (
     email,
     first_name,
     last_name,
-    phone_number
+    phone_number,
+    profile_image_url
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
-) RETURNING user_id, username, password_hash, email, first_name, last_name, phone_number, is_active, last_login, created_at, updated_at
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING user_id, username, password_hash, email, first_name, last_name, phone_number, profile_image_url, is_active, last_login, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	Username     string         `json:"username"`
-	PasswordHash string         `json:"password_hash"`
-	Email        sql.NullString `json:"email"`
-	FirstName    sql.NullString `json:"first_name"`
-	LastName     sql.NullString `json:"last_name"`
-	PhoneNumber  sql.NullString `json:"phone_number"`
+	Username        string         `json:"username"`
+	PasswordHash    string         `json:"password_hash"`
+	Email           sql.NullString `json:"email"`
+	FirstName       sql.NullString `json:"first_name"`
+	LastName        sql.NullString `json:"last_name"`
+	PhoneNumber     sql.NullString `json:"phone_number"`
+	ProfileImageUrl sql.NullString `json:"profile_image_url"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -40,6 +42,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.FirstName,
 		arg.LastName,
 		arg.PhoneNumber,
+		arg.ProfileImageUrl,
 	)
 	var i User
 	err := row.Scan(
@@ -50,6 +53,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.FirstName,
 		&i.LastName,
 		&i.PhoneNumber,
+		&i.ProfileImageUrl,
 		&i.IsActive,
 		&i.LastLogin,
 		&i.CreatedAt,
@@ -70,7 +74,7 @@ func (q *Queries) DeleteUser(ctx context.Context, userID int32) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT user_id, username, password_hash, email, first_name, last_name, phone_number, is_active, last_login, created_at, updated_at FROM users
+SELECT user_id, username, password_hash, email, first_name, last_name, phone_number, profile_image_url, is_active, last_login, created_at, updated_at FROM users
 WHERE user_id = $1
 `
 
@@ -85,6 +89,7 @@ func (q *Queries) GetUser(ctx context.Context, userID int32) (User, error) {
 		&i.FirstName,
 		&i.LastName,
 		&i.PhoneNumber,
+		&i.ProfileImageUrl,
 		&i.IsActive,
 		&i.LastLogin,
 		&i.CreatedAt,
@@ -104,7 +109,7 @@ func (q *Queries) HardDeleteUser(ctx context.Context, userID int32) error {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT user_id, username, password_hash, email, first_name, last_name, phone_number, is_active, last_login, created_at, updated_at FROM users
+SELECT user_id, username, password_hash, email, first_name, last_name, phone_number, profile_image_url, is_active, last_login, created_at, updated_at FROM users
 ORDER BY user_id
 LIMIT $1 OFFSET $2
 `
@@ -131,6 +136,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.FirstName,
 			&i.LastName,
 			&i.PhoneNumber,
+			&i.ProfileImageUrl,
 			&i.IsActive,
 			&i.LastLogin,
 			&i.CreatedAt,
@@ -154,19 +160,21 @@ SET
     first_name = COALESCE($3, first_name),
     last_name = COALESCE($4, last_name),
     phone_number = COALESCE($5, phone_number),
-    is_active = COALESCE($6, is_active)
-WHERE user_id = $7
-RETURNING user_id, username, password_hash, email, first_name, last_name, phone_number, is_active, last_login, created_at, updated_at
+    profile_image_url = COALESCE($6, profile_image_url),
+    is_active = COALESCE($7, is_active)
+WHERE user_id = $8
+RETURNING user_id, username, password_hash, email, first_name, last_name, phone_number, profile_image_url, is_active, last_login, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	Username    sql.NullString `json:"username"`
-	Email       sql.NullString `json:"email"`
-	FirstName   sql.NullString `json:"first_name"`
-	LastName    sql.NullString `json:"last_name"`
-	PhoneNumber sql.NullString `json:"phone_number"`
-	IsActive    sql.NullBool   `json:"is_active"`
-	UserID      int32          `json:"user_id"`
+	Username        sql.NullString `json:"username"`
+	Email           sql.NullString `json:"email"`
+	FirstName       sql.NullString `json:"first_name"`
+	LastName        sql.NullString `json:"last_name"`
+	PhoneNumber     sql.NullString `json:"phone_number"`
+	ProfileImageUrl sql.NullString `json:"profile_image_url"`
+	IsActive        sql.NullBool   `json:"is_active"`
+	UserID          int32          `json:"user_id"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -176,6 +184,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.FirstName,
 		arg.LastName,
 		arg.PhoneNumber,
+		arg.ProfileImageUrl,
 		arg.IsActive,
 		arg.UserID,
 	)
@@ -188,6 +197,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.FirstName,
 		&i.LastName,
 		&i.PhoneNumber,
+		&i.ProfileImageUrl,
 		&i.IsActive,
 		&i.LastLogin,
 		&i.CreatedAt,
