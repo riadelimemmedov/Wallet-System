@@ -122,6 +122,24 @@ func setupTestPool() (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// DropAllData removes all data from the database
+func (db *TestDB) DropAllData() error {
+	query := `DO $$
+	DECLARE
+	    r RECORD;
+	BEGIN
+	    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+	        EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' CASCADE';
+	    END LOOP;
+	END $$;`
+
+	_, err := db.Pool.Exec(ctx, query)
+	if err != nil {
+		return fmt.Errorf("failed to truncate tables: %w", err)
+	}
+	return nil
+}
+
 func TestMain(m *testing.M) {
 	config := TestConfig{
 		EnvPath: "../../.env.test",
@@ -137,4 +155,11 @@ func TestMain(m *testing.M) {
 		testDB.cleanup()
 	}
 	os.Exit(code)
+}
+
+func CleanupDB(t *testing.T, db *TestDB) {
+	t.Helper()
+	if err := db.DropAllData(); err != nil {
+		t.Fatalf("Failed to clean up database: %v", err)
+	}
 }
