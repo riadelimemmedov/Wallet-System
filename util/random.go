@@ -106,3 +106,27 @@ func RandomProfileImage() string {
 	return fmt.Sprintf(serviceURL, width, height)
 
 }
+
+// ! RandomAccountNumber generates a random account number
+func RandomAccountNumber() string {
+	return fmt.Sprintf("ACC%d", RandomInt(100000, 999999))
+}
+
+// ! RandomAccountType generates a random account type
+func RandomAccountType() string {
+	accountTypes := []string{"SAVINGS", "CHECKING", "INVESTMENT", "CREDIT", "FIXED_DEPOSIT", "MONEY_MARKET"}
+	// accountTypes := []string{"MONEY_MARKET"}
+	return accountTypes[rand.Intn(len(accountTypes))]
+}
+
+// ! RandomFloat generates a random float64 between min and max
+func RandomFloat(min, max float64) float64 {
+	return min + rand.Float64()*(max-min)
+}
+
+// ! RandomCurrency generates a random currency code
+func RandomCurrency() string {
+	currencies := []string{"USD", "EUR", "GBP", "JPY", "CAD", "TL", "AZN", "LR"}
+	n := len(currencies)
+	return currencies[rand.Intn(n)]
+}
