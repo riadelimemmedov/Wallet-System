@@ -130,3 +130,40 @@ func RandomCurrency() string {
 	n := len(currencies)
 	return currencies[rand.Intn(n)]
 }
+
+// ! RandomCurrencyName returns the full name of the given currency code
+func RandomCurrencyName(code string) string {
+	currencyMap := map[string]string{
+		"USD": "United States Dollar",
+		"EUR": "Euro",
+		"GBP": "British Pound Sterling",
+		"JPY": "Japanese Yen",
+		"CAD": "Canadian Dollar",
+		"TL":  "Turkish Lira",
+		"AZN": "Azerbaijani Manat",
+		"LR":  "Liberian Dollar",
+	}
+
+	if name, ok := currencyMap[code]; ok {
+		return name
+	}
+	return "Unknown Currency"
+}
+
+// ! RandomCurrencySymbol returns the symbol of the given currency code
+func RandomCurrencySymbol(code string) string {
+	symbolMap := map[string]string{
+		"USD": "$",
+		"EUR": "€",
+		"GBP": "£",
+		"JPY": "¥",
+		"CAD": "C$",
+		"TL":  "₺",
+		"AZN": "₼",
+		"LR":  "$",
+	}
+	if symbol, ok := symbolMap[code]; ok {
+		return symbol
+	}
+	return "?"
+}

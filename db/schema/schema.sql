@@ -1,4 +1,4 @@
---! Users table - stores user information
+--! Users table - stores user information +
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -18,7 +18,7 @@ CREATE TABLE users (
 
 CREATE INDEX idx_users_composite ON users(user_id, username, email, is_active);
 
---! Account Types Reference Table
+--! Account Types Reference Table +
 CREATE TABLE account_types (
     account_type VARCHAR(50) PRIMARY KEY,
     description TEXT NOT NULL,

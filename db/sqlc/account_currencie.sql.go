@@ -7,9 +7,54 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/jackc/pgtype"
 )
+
+const createCurrency = `-- name: CreateCurrency :one
+INSERT INTO account_currencies (
+    currency_code,
+    currency_name,
+    symbol,
+    exchange_rate,
+    last_updated_at
+) VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    CURRENT_TIMESTAMP
+) RETURNING currency_code, currency_name, symbol, is_active, exchange_rate, last_updated_at, created_at, updated_at
+`
+
+type CreateCurrencyParams struct {
+	CurrencyCode string         `json:"currency_code"`
+	CurrencyName string         `json:"currency_name"`
+	Symbol       sql.NullString `json:"symbol"`
+	ExchangeRate pgtype.Numeric `json:"exchange_rate"`
+}
+
+func (q *Queries) CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (AccountCurrency, error) {
+	row := q.db.QueryRow(ctx, createCurrency,
+		arg.CurrencyCode,
+		arg.CurrencyName,
+		arg.Symbol,
+		arg.ExchangeRate,
+	)
+	var i AccountCurrency
+	err := row.Scan(
+		&i.CurrencyCode,
+		&i.CurrencyName,
+		&i.Symbol,
+		&i.IsActive,
+		&i.ExchangeRate,
+		&i.LastUpdatedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const deleteCurrency = `-- name: DeleteCurrency :exec
 UPDATE account_currencies

@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateAccountType(ctx context.Context, arg CreateAccountTypeParams) (AccountType, error)
+	CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (AccountCurrency, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateTransactionStatus(ctx context.Context, arg CreateTransactionStatusParams) (TransactionStatus, error)
 	CreateTransactionType(ctx context.Context, arg CreateTransactionTypeParams) (TransactionType, error)
