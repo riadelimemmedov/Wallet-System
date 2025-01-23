@@ -27,7 +27,7 @@ CREATE TABLE account_types (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---! Account Currencies Reference Table
+--! Account Currencies Reference Table +
 CREATE TABLE account_currencies (
     currency_code VARCHAR(3) PRIMARY KEY,
     currency_name VARCHAR(50) NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE accounts (
 
 CREATE INDEX idx_accounts_composite ON accounts(account_id, user_id);
 
---! Transaction Types Reference Table
+--! Transaction Types Reference Table +
 CREATE TABLE transaction_types (
     type_code VARCHAR(50) PRIMARY KEY,
     description TEXT NOT NULL,
