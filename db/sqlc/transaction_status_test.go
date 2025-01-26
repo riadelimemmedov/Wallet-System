@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/riad/banksystemendtoend/util"
+	"github.com/riad/banksystemendtoend/util/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,8 +14,8 @@ import (
 // The created status is verified for proper initialization and active state.
 func createRandomTransactionStatus(t *testing.T) TransactionStatus {
 	arg := CreateTransactionStatusParams{
-		StatusCode:  util.RandomString(5),
-		Description: util.RandomString(30),
+		StatusCode:  common.RandomString(5),
+		Description: common.RandomString(30),
 	}
 
 	status, err := testDB.Queries.CreateTransactionStatus(context.Background(), arg)
@@ -58,7 +58,7 @@ func TestModifyTransactionStatus(t *testing.T) {
 
 	arg := ModifyTransactionStatusParams{
 		StatusCode:  status1.StatusCode,
-		Description: sql.NullString{String: util.RandomString(20), Valid: true},
+		Description: sql.NullString{String: common.RandomString(20), Valid: true},
 		IsActive:    sql.NullBool{Bool: false, Valid: true},
 	}
 

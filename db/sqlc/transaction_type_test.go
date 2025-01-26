@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/riad/banksystemendtoend/util"
+	"github.com/riad/banksystemendtoend/util/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,8 +13,8 @@ import (
 // It generates random type code and description, creates the record, and validates the creation.
 // Returns the created TransactionType.
 func createRandomTransactionType(t *testing.T) TransactionType {
-	typeCode := util.RandomString(5)
-	description := util.RandomString(30)
+	typeCode := common.RandomString(5)
+	description := common.RandomString(30)
 
 	arg := CreateTransactionTypeParams{
 		TypeCode:    typeCode,
@@ -62,7 +62,7 @@ func TestUpdateTransactionType(t *testing.T) {
 
 	arg := UpdateTransactionTypeParams{
 		TypeCode:    transType1.TypeCode,
-		Description: sql.NullString{String: util.RandomString(20), Valid: true},
+		Description: sql.NullString{String: common.RandomString(20), Valid: true},
 		IsActive:    sql.NullBool{Bool: false, Valid: true},
 	}
 	updatedTransType, err := testDB.Queries.UpdateTransactionType(context.Background(), arg)

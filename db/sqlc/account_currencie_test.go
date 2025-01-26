@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/riad/banksystemendtoend/util"
+	"github.com/riad/banksystemendtoend/util/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,18 +31,18 @@ func createRandomCurrency(t *testing.T) AccountCurrency {
 // It generates random values for currency code, exchange rate, name, and symbol.
 // Panics if the exchange rate numeric conversion fails.
 func generateCurrencyParams() CreateCurrencyParams {
-	currency_code := util.RandomCurrency()
-	formattedValue := strconv.FormatFloat(util.RandomFloat(1.1, 99.99), 'f', -1, 64)
-	exchangeRate, err := util.SetNumeric(formattedValue)
+	currency_code := common.RandomCurrency()
+	formattedValue := strconv.FormatFloat(common.RandomFloat(1.1, 99.99), 'f', -1, 64)
+	exchangeRate, err := common.SetNumeric(formattedValue)
 	if err != nil {
 		panic(fmt.Sprintf("failed to set numeric value: %v", err))
 	}
 
 	return CreateCurrencyParams{
 		CurrencyCode: currency_code,
-		CurrencyName: util.RandomCurrencyName(currency_code),
+		CurrencyName: common.RandomCurrencyName(currency_code),
 		Symbol: sql.NullString{
-			String: util.RandomCurrencySymbol(currency_code),
+			String: common.RandomCurrencySymbol(currency_code),
 			Valid:  true,
 		},
 		ExchangeRate: exchangeRate,
@@ -124,8 +124,8 @@ func TestUpdateExchangeRate(t *testing.T) {
 	ctx := context.Background()
 	currency1 := createRandomCurrency(t)
 
-	formattedValue := strconv.FormatFloat(util.RandomFloat(1.1, 99.99), 'f', -1, 64)
-	exchangeRate, _ := util.SetNumeric(formattedValue)
+	formattedValue := strconv.FormatFloat(common.RandomFloat(1.1, 99.99), 'f', -1, 64)
+	exchangeRate, _ := common.SetNumeric(formattedValue)
 
 	arg := UpdateExchangeRateParams{
 		CurrencyCode: currency1.CurrencyCode,

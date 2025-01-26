@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/riad/banksystemendtoend/util"
+	"github.com/riad/banksystemendtoend/util/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,26 +14,26 @@ import (
 // !It returns the created user instance.
 func createRandomUser(t *testing.T) User {
 	arg := CreateUserParams{
-		Username:     util.RandomUsername(),
-		PasswordHash: util.RandomPassword(),
+		Username:     common.RandomUsername(),
+		PasswordHash: common.RandomPassword(),
 		Email: sql.NullString{
-			String: util.RandomEmail(),
+			String: common.RandomEmail(),
 			Valid:  true,
 		},
 		FirstName: sql.NullString{
-			String: util.RandomFirstName(),
+			String: common.RandomFirstName(),
 			Valid:  true,
 		},
 		LastName: sql.NullString{
-			String: util.RandomLastName(),
+			String: common.RandomLastName(),
 			Valid:  true,
 		},
 		PhoneNumber: sql.NullString{
-			String: util.RandomPhoneNumber(),
+			String: common.RandomPhoneNumber(),
 			Valid:  true,
 		},
 		ProfileImageUrl: sql.NullString{
-			String: util.RandomProfileImage(),
+			String: common.RandomProfileImage(),
 			Valid:  true,
 		},
 	}
@@ -69,10 +69,10 @@ func TestCreateUser(t *testing.T) {
 // ! It ensures that nullable fields are properly handled during user creation.
 func TestCreateUserWithNullFields(t *testing.T) {
 	arg := CreateUserParams{
-		Username:     util.RandomUsername(),
-		PasswordHash: util.RandomPassword(),
+		Username:     common.RandomUsername(),
+		PasswordHash: common.RandomPassword(),
 		Email: sql.NullString{
-			String: util.RandomEmail(),
+			String: common.RandomEmail(),
 			Valid:  true,
 		},
 		FirstName:       sql.NullString{Valid: false},
@@ -152,27 +152,27 @@ func TestUpdateUser(t *testing.T) {
 	arg := UpdateUserParams{
 		UserID: user1.UserID,
 		Username: sql.NullString{
-			String: util.RandomUsername(),
+			String: common.RandomUsername(),
 			Valid:  true,
 		},
 		Email: sql.NullString{
-			String: util.RandomEmail(),
+			String: common.RandomEmail(),
 			Valid:  true,
 		},
 		FirstName: sql.NullString{
-			String: util.RandomFirstName(),
+			String: common.RandomFirstName(),
 			Valid:  true,
 		},
 		LastName: sql.NullString{
-			String: util.RandomLastName(),
+			String: common.RandomLastName(),
 			Valid:  true,
 		},
 		PhoneNumber: sql.NullString{
-			String: util.RandomPhoneNumber(),
+			String: common.RandomPhoneNumber(),
 			Valid:  true,
 		},
 		ProfileImageUrl: sql.NullString{
-			String: util.RandomProfileImage(),
+			String: common.RandomProfileImage(),
 			Valid:  true,
 		},
 	}
@@ -193,7 +193,7 @@ func TestUpdateUserNullFields(t *testing.T) {
 	arg := UpdateUserParams{
 		UserID: user1.UserID,
 		Email: sql.NullString{
-			String: util.RandomEmail(),
+			String: common.RandomEmail(),
 			Valid:  true,
 		},
 		FirstName:       sql.NullString{Valid: false},

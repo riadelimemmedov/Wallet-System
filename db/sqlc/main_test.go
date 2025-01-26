@@ -11,6 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/riad/banksystemendtoend/util/config"
+	"github.com/riad/banksystemendtoend/util/env"
 )
 
 type TestDB struct {
@@ -24,10 +26,7 @@ var (
 	ctx    = context.Background()
 )
 
-// !TestConfig holds test configuration options
-type TestConfig struct {
-	EnvPath string
-}
+const appEnvironment = "test"
 
 // !getEnvAsInt safely gets on environment variable as integer
 func getEnvAsInt(key string, defaultVal int) int {
@@ -50,10 +49,10 @@ func getEnvAsDuration(key string, defaultVal time.Duration) time.Duration {
 }
 
 // ! NewTestDB initializes database connection for testing with custom config
-func NewTestDB(config TestConfig) (*TestDB, error) {
+func NewTestDB(config config.AppConfig) (*TestDB, error) {
 	//? Load test environment variables from specified path
-	if err := godotenv.Load(config.EnvPath); err != nil {
-		return nil, fmt.Errorf("error loading env file from %s: %w", config.EnvPath, err)
+	if err := godotenv.Load(config.ConfigFilePath); err != nil {
+		return nil, fmt.Errorf("error loading env file from %s: %w", config.ConfigFilePath, err)
 	}
 
 	pool, err := setupTestPool()
@@ -141,10 +140,10 @@ func (db *TestDB) DropAllData() error {
 }
 
 func TestMain(m *testing.M) {
-	config := TestConfig{
-		EnvPath: "../../.env.test",
+	config, err := env.NewAppEnvironmentConfig(appEnvironment)
+	if err != nil {
+		log.Fatalf("Failed to initialize config: %v", err)
 	}
-	var err error
 	testDB, err = NewTestDB(config)
 	fmt.Println("Tested connection to db...")
 	if err != nil {

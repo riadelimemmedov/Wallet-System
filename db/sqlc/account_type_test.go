@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/riad/banksystemendtoend/util"
+	"github.com/riad/banksystemendtoend/util/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,8 +30,8 @@ func createRandomAccountType(t *testing.T) AccountType {
 	maxRetries := 5
 	for i := 0; i < maxRetries; i++ {
 		arg := CreateAccountTypeParams{
-			AccountType: util.RandomAccountType(),
-			Description: util.RandomString(20),
+			AccountType: common.RandomAccountType(),
+			Description: common.RandomString(20),
 		}
 		accountType, err = testDB.Queries.CreateAccountType(context.Background(), arg)
 		if err == nil {
@@ -106,9 +106,9 @@ func TestUpdateAccountType(t *testing.T) {
 	CleanupDB(t, testDB)
 	accountType1 := createRandomAccountType(t)
 
-	newType := util.RandomAccountType()
+	newType := common.RandomAccountType()
 	for newType == accountType1.AccountType {
-		newType = util.RandomAccountType()
+		newType = common.RandomAccountType()
 	}
 
 	arg := UpdateAccountTypeParams{
