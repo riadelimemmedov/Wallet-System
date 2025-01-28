@@ -14,22 +14,22 @@ import (
 	"github.com/riad/banksystemendtoend/util/env"
 )
 
-type TestDB struct {
-	Pool    *pgxpool.Pool
-	Queries *Queries
-	cleanup func()
-}
+// type TestDB struct {
+// 	Pool    *pgxpool.Pool
+// 	Queries *Queries
+// 	cleanup func()
+// }
 
 var (
-	testDB *TestDB
-	ctx    = context.Background()
+	testStore Store
+	ctx       = context.Background()
 )
 
 const appEnvironment = "test"
 const envPrefix = "TEST"
 
 // ! NewTestDB initializes database connection for testing with custom config
-func NewTestDB(config config.AppConfig) (*TestDB, error) {
+func NewTestDB(config config.AppConfig) (Store, error) {
 	//? Load test environment variables from specified path
 	if err := godotenv.Load(config.ConfigFilePath); err != nil {
 		return nil, fmt.Errorf("error loading env file from %s: %w", config.ConfigFilePath, err)
@@ -40,12 +40,8 @@ func NewTestDB(config config.AppConfig) (*TestDB, error) {
 		return nil, fmt.Errorf("error creating test pool: %w", err)
 	}
 
-	db := &TestDB{
-		Pool:    pool,
-		Queries: New(pool),
-		cleanup: func() { pool.Close() },
-	}
-	return db, nil
+	testStore := NewStore(pool)
+	return testStore, nil
 }
 
 // !setupTestPool check db connection
@@ -54,9 +50,13 @@ func setupTestPool() (*pgxpool.Pool, error) {
 }
 
 // !DropAllData removes all data from the database
-func (db *TestDB) DropAllData() error {
+func DropAllData() error {
+	sqlStore, err := getSQLStore(testStore)
+	if err != nil {
+		return err
+	}
 	query := common.GetTruncateTablesQuery()
-	_, err := db.Pool.Exec(ctx, query)
+	_, err = sqlStore.Pool.Exec(ctx, query)
 	if err != nil {
 		return fmt.Errorf("failed to truncate tables: %w", err)
 	}
@@ -69,22 +69,26 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
-	testDB, err = NewTestDB(config)
+	testStore, err = NewTestDB(config)
+	sqlStore, err := getSQLStore(testStore)
+	if err != nil {
+		log.Fatalf("Failed to get SQL store: %v", err)
+	}
 	fmt.Println("Tested connection to db...")
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	code := m.Run()
-	if testDB != nil && testDB.cleanup != nil {
-		testDB.cleanup()
+	if sqlStore != nil && sqlStore.cleanup != nil {
+		sqlStore.cleanup()
 	}
 	os.Exit(code)
 }
 
 // ! CleanupDB provides a helper function for cleaning up the test database between tests.
-func CleanupDB(t *testing.T, db *TestDB) {
+func CleanupDB(t *testing.T) {
 	t.Helper()
-	if err := db.DropAllData(); err != nil {
+	if err := DropAllData(); err != nil {
 		t.Fatalf("Failed to clean up database: %v", err)
 	}
 }
