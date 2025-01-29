@@ -13,6 +13,9 @@ import (
 // !createRandomUser => creates a test user with random data and validates the created user's fields.
 // !It returns the created user instance.
 func createRandomUser(t *testing.T) User {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	arg := CreateUserParams{
 		Username:     common.RandomUsername(),
 		PasswordHash: common.RandomPassword(),
@@ -38,7 +41,7 @@ func createRandomUser(t *testing.T) User {
 		},
 	}
 
-	user, err := testDB.Queries.CreateUser(context.Background(), arg)
+	user, err := sqlStore.Queries.CreateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
@@ -63,11 +66,15 @@ func createRandomUser(t *testing.T) User {
 // ! It uses createRandomUser helper function to create and validate a new user.
 func TestCreateUser(t *testing.T) {
 	createRandomUser(t)
+	defer CleanupDB(t)
 }
 
 // ! TestCreateUserWithNullFields => validates that a user can be created with optional fields set to null.
 // ! It ensures that nullable fields are properly handled during user creation.
 func TestCreateUserWithNullFields(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	arg := CreateUserParams{
 		Username:     common.RandomUsername(),
 		PasswordHash: common.RandomPassword(),
@@ -81,7 +88,7 @@ func TestCreateUserWithNullFields(t *testing.T) {
 		ProfileImageUrl: sql.NullString{Valid: false},
 	}
 
-	user, err := testDB.Queries.CreateUser(context.Background(), arg)
+	user, err := sqlStore.Queries.CreateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 
@@ -91,13 +98,18 @@ func TestCreateUserWithNullFields(t *testing.T) {
 	require.False(t, user.LastName.Valid)
 	require.False(t, user.PhoneNumber.Valid)
 	require.False(t, user.ProfileImageUrl.Valid)
+
+	defer CleanupDB(t)
 }
 
 // ! TestGetUser => validates the retrieval of a user by ID.
 // ! It creates a user, retrieves it, and ensures all fields match the original user.
 func TestGetUser(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	user1 := createRandomUser(t)
-	user2, err := testDB.Queries.GetUser(context.Background(), user1.UserID)
+	user2, err := sqlStore.Queries.GetUser(context.Background(), user1.UserID)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, user2)
@@ -115,12 +127,17 @@ func TestGetUser(t *testing.T) {
 	require.WithinDuration(t, user1.CreatedAt, user2.CreatedAt, time.Second)
 	require.WithinDuration(t, user1.UpdatedAt, user2.UpdatedAt, time.Second)
 	require.WithinDuration(t, user1.LastLogin, user2.LastLogin, time.Second)
+
+	defer CleanupDB(t)
 }
 
 // ! TestListUsers => validates the pagination functionality of user listing.
 // ! It creates multiple users and verifies that the correct number of users
 // ! are returned with the specified limit and offset.
 func TestListUsers(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	for i := 0; i < 10; i++ {
 		createRandomUser(t)
 	}
@@ -130,7 +147,7 @@ func TestListUsers(t *testing.T) {
 		Offset: 5,
 	}
 
-	users, err := testDB.Queries.ListUsers(context.Background(), arg)
+	users, err := sqlStore.Queries.ListUsers(context.Background(), arg)
 	require.NoError(t, err)
 	require.Len(t, users, 5)
 
@@ -141,12 +158,16 @@ func TestListUsers(t *testing.T) {
 		require.True(t, user.Email.Valid)
 		require.NotEmpty(t, user.Email.String)
 	}
+	defer CleanupDB(t)
 }
 
 // ! TestUpdateUser => validates that a user's information can be updated.
 // ! It creates a user, updates all fields with new random values,
 // ! and verifies the changes were successful.
 func TestUpdateUser(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	user1 := createRandomUser(t)
 
 	arg := UpdateUserParams{
@@ -177,17 +198,22 @@ func TestUpdateUser(t *testing.T) {
 		},
 	}
 
-	user2, err := testDB.Queries.UpdateUser(context.Background(), arg)
+	user2, err := sqlStore.Queries.UpdateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user2)
 
 	require.Equal(t, user1.UserID, user2.UserID)
+
+	defer CleanupDB(t)
 }
 
 // ! TestUpdateUserNullFields => validates that a user can be partially updated
 // ! with some fields set to null. It ensures that non-updated fields retain
 // ! their original values and null fields are properly handled.
 func TestUpdateUserNullFields(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	user1 := createRandomUser(t)
 
 	arg := UpdateUserParams{
@@ -202,39 +228,51 @@ func TestUpdateUserNullFields(t *testing.T) {
 		ProfileImageUrl: sql.NullString{Valid: false},
 	}
 
-	user2, err := testDB.Queries.UpdateUser(context.Background(), arg)
+	user2, err := sqlStore.Queries.UpdateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user2)
 
 	require.Equal(t, user1.Username, user2.Username)
 	require.Equal(t, arg.Email, user2.Email)
+
+	defer CleanupDB(t)
 }
 
 // ! TestDeleteUser => validates the soft deletion of a user.
 // ! It creates a user, soft deletes it, and verifies that the user
 // ! still exists but is marked as inactive.
 func TestDeleteUser(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	user1 := createRandomUser(t)
 	require.True(t, user1.IsActive)
 
-	err := testDB.Queries.DeleteUser(context.Background(), user1.UserID)
+	err := sqlStore.Queries.DeleteUser(context.Background(), user1.UserID)
 	require.NoError(t, err)
 
-	user2, err := testDB.Queries.GetUser(context.Background(), user1.UserID)
+	user2, err := sqlStore.Queries.GetUser(context.Background(), user1.UserID)
 	require.NoError(t, err)
 	require.False(t, user2.IsActive)
+
+	defer CleanupDB(t)
 }
 
 // ! TestHardDeleteUser validates the permanent deletion of a user.
 // ! It creates a user, permanently deletes it, and verifies that
 // ! the user can no longer be retrieved from the database.
 func TestHardDeleteUser(t *testing.T) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	user1 := createRandomUser(t)
 
-	err := testDB.Queries.HardDeleteUser(context.Background(), user1.UserID)
+	err := sqlStore.Queries.HardDeleteUser(context.Background(), user1.UserID)
 	require.NoError(t, err)
 
-	user2, err := testDB.Queries.GetUser(context.Background(), user1.UserID)
+	user2, err := sqlStore.Queries.GetUser(context.Background(), user1.UserID)
 	require.Error(t, err)
 	require.Empty(t, user2)
+
+	defer CleanupDB(t)
 }

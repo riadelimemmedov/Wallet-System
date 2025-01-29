@@ -11,19 +11,10 @@ import (
 
 // createRandomAccountType creates a new random account type for testing purposes.
 // It handles potential duplicate key violations by retrying up to 5 times with different random values.
-//
-// Parameters:
-//   - t: Testing object for managing test state and assertions
-//
-// Returns:
-//   - AccountType: A newly created account type with random data
-//
-// The function will fail the test if:
-//   - It cannot create a unique account type after maximum retries
-//   - Any unexpected database error occurs
-//   - The created account type is empty
-//   - The created account type is not marked as active
 func createRandomAccountType(t *testing.T) AccountType {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	var accountType AccountType
 	var err error
 
@@ -33,7 +24,7 @@ func createRandomAccountType(t *testing.T) AccountType {
 			AccountType: common.RandomAccountType(),
 			Description: common.RandomString(20),
 		}
-		accountType, err = testDB.Queries.CreateAccountType(context.Background(), arg)
+		accountType, err = sqlStore.Queries.CreateAccountType(context.Background(), arg)
 		if err == nil {
 			break
 		}
@@ -52,33 +43,24 @@ func createRandomAccountType(t *testing.T) AccountType {
 
 // TestCreateAccountType verifies the creation of a new account type.
 // It first cleans the database and then creates a random account type.
-//
-// This test ensures that:
-//   - The database can be cleaned successfully
-//   - A new account type can be created with random valid data
 func TestCreateAccountType(t *testing.T) {
-	CleanupDB(t, testDB)
 	createRandomAccountType(t)
+	defer CleanupDB(t)
 }
 
 // TestListAccountTypes verifies the listing of account types.
 // It creates multiple account types and ensures they can be retrieved correctly.
-//
-// The test:
-//   - Cleans the database
-//   - Creates 3 random account types
-//   - Retrieves all account types
-//   - Verifies that all created account types are present in the list
-//   - Ensures each retrieved account type is valid and active
 func TestListAccountTypes(t *testing.T) {
-	CleanupDB(t, testDB)
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	createdTypes := make(map[string]bool)
 	for i := 0; i < 3; i++ {
 		accountType := createRandomAccountType(t)
 		createdTypes[accountType.AccountType] = true
 	}
 
-	accountTypes, err := testDB.Queries.ListAccountTypes(context.Background())
+	accountTypes, err := sqlStore.Queries.ListAccountTypes(context.Background())
 	require.NoError(t, err)
 	require.NotEmpty(t, accountTypes)
 
@@ -92,18 +74,16 @@ func TestListAccountTypes(t *testing.T) {
 	}
 	require.True(t, foundTypes > 0)
 	require.True(t, foundTypes == 3)
+
+	defer CleanupDB(t)
 }
 
 // TestUpdateAccountType verifies the updating of an account type.
 // It creates an account type and then updates its type field with a new random value.
-//
-// The test ensures:
-//   - Initial account type can be created
-//   - The type field can be updated to a new unique value
-//   - Other fields (description, isActive) remain unchanged
-//   - The update operation returns the correct updated account type
 func TestUpdateAccountType(t *testing.T) {
-	CleanupDB(t, testDB)
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	accountType1 := createRandomAccountType(t)
 
 	newType := common.RandomAccountType()
@@ -115,30 +95,29 @@ func TestUpdateAccountType(t *testing.T) {
 		AccountType:   newType,
 		AccountType_2: accountType1.AccountType,
 	}
-	accountType2, err := testDB.Queries.UpdateAccountType(context.Background(), arg)
+	accountType2, err := sqlStore.Queries.UpdateAccountType(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, accountType2)
 
 	require.Equal(t, arg.AccountType, accountType2.AccountType)
 	require.Equal(t, accountType1.Description, accountType2.Description)
 	require.Equal(t, accountType1.IsActive, accountType2.IsActive)
+
+	defer CleanupDB(t)
 }
 
 // TestDeleteAccountType verifies the soft deletion of an account type.
 // It creates an account type and then marks it as inactive (soft delete).
-//
-// The test verifies:
-//   - Initial account type can be created
-//   - The account type can be soft deleted
-//   - The deleted account type appears as inactive in the list
 func TestDeleteAccountType(t *testing.T) {
-	CleanupDB(t, testDB)
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	accountType1 := createRandomAccountType(t)
 
-	err := testDB.Queries.DeleteAccountType(context.Background(), accountType1.AccountType)
+	err := sqlStore.Queries.DeleteAccountType(context.Background(), accountType1.AccountType)
 	require.NoError(t, err)
 
-	accountTypes, err := testDB.Queries.ListAccountTypes(context.Background())
+	accountTypes, err := sqlStore.Queries.ListAccountTypes(context.Background())
 	require.NoError(t, err)
 
 	for _, accountType := range accountTypes {
@@ -146,23 +125,21 @@ func TestDeleteAccountType(t *testing.T) {
 			require.False(t, accountType.IsActive)
 		}
 	}
+	defer CleanupDB(t)
 }
 
 // TestHardDeleteAccountType verifies the permanent deletion of an account type.
 // It creates an account type and then completely removes it from the database.
-//
-// The test ensures:
-//   - Initial account type can be created
-//   - The account type can be permanently deleted
-//   - The deleted account type does not appear in the list after deletion
 func TestHardDeleteAccountType(t *testing.T) {
-	CleanupDB(t, testDB)
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	accountType1 := createRandomAccountType(t)
 
-	err := testDB.Queries.HardDeleteAccountType(context.Background(), accountType1.AccountType)
+	err := sqlStore.Queries.HardDeleteAccountType(context.Background(), accountType1.AccountType)
 	require.NoError(t, err)
 
-	accountTypes, err := testDB.Queries.ListAccountTypes(context.Background())
+	accountTypes, err := sqlStore.Queries.ListAccountTypes(context.Background())
 	require.NoError(t, err)
 
 	for _, accountType := range accountTypes {
@@ -170,4 +147,5 @@ func TestHardDeleteAccountType(t *testing.T) {
 			require.NotEqual(t, accountType1.AccountType, accountType.AccountType)
 		}
 	}
+	defer CleanupDB(t)
 }

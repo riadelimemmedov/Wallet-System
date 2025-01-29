@@ -6,6 +6,7 @@ import (
 	"github.com/riad/banksystemendtoend/util/config"
 )
 
+// ! Returns config with path
 func NewAppEnvironmentConfig(environment string) (config.AppConfig, error) {
 	appConfigMap := map[string]config.AppConfig{
 		"test": {

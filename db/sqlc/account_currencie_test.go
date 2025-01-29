@@ -53,12 +53,15 @@ func generateCurrencyParams() CreateCurrencyParams {
 // duplicate key errors. It will retry up to maxRetries times before giving up.
 // Returns the created currency and any error encountered.
 func createCurrencyWithRetry(t *testing.T, arg CreateCurrencyParams) (AccountCurrency, error) {
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	const maxRetries = 10
 	var accountCurrency AccountCurrency
 	var err error
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
-		accountCurrency, err = testDB.Queries.CreateCurrency(context.Background(), arg)
+		accountCurrency, err = sqlStore.Queries.CreateCurrency(context.Background(), arg)
 
 		if err == nil {
 			return accountCurrency, nil
@@ -94,18 +97,19 @@ func validateCreatedCurrency(t *testing.T, currency AccountCurrency, arg CreateC
 
 // TestCreateCurrency verifies that a new currency can be created successfully.
 func TestCreateCurrency(t *testing.T) {
-	CleanupDB(t, testDB)
 	createRandomCurrency(t)
+	defer CleanupDB(t)
 }
 
 // TestGetCurrency verifies that a currency can be retrieved correctly after creation
 // and that all fields match the original values.
 func TestGetCurrency(t *testing.T) {
-	CleanupDB(t, testDB)
-	ctx := context.Background()
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	currency1 := createRandomCurrency(t)
 
-	currency2, err := testDB.Queries.GetCurrency(ctx, currency1.CurrencyCode)
+	currency2, err := sqlStore.Queries.GetCurrency(ctx, currency1.CurrencyCode)
 	require.NoError(t, err)
 	require.NotEmpty(t, currency2)
 
@@ -115,13 +119,16 @@ func TestGetCurrency(t *testing.T) {
 	require.Equal(t, currency1.ExchangeRate, currency2.ExchangeRate)
 	require.Equal(t, currency1.IsActive, currency2.IsActive)
 	require.WithinDuration(t, currency1.CreatedAt, currency2.CreatedAt, time.Second)
+
+	defer CleanupDB(t)
 }
 
 // TestUpdateExchangeRate verifies that a currency's exchange rate can be updated
 // successfully and that the update is reflected in the database.
 func TestUpdateExchangeRate(t *testing.T) {
-	CleanupDB(t, testDB)
-	ctx := context.Background()
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	currency1 := createRandomCurrency(t)
 
 	formattedValue := strconv.FormatFloat(common.RandomFloat(1.1, 99.99), 'f', -1, 64)
@@ -132,23 +139,29 @@ func TestUpdateExchangeRate(t *testing.T) {
 		ExchangeRate: exchangeRate,
 	}
 
-	currency2, err := testDB.Queries.UpdateExchangeRate(ctx, arg)
+	currency2, err := sqlStore.Queries.UpdateExchangeRate(ctx, arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, currency2)
 
 	require.Equal(t, currency1.CurrencyCode, currency2.CurrencyCode)
+
+	defer CleanupDB(t)
 }
 
 // TestDeleteCurrency verifies that a currency can be soft deleted (marked as inactive)
 // and that the deletion is reflected in the database.
 func TestDeleteCurrency(t *testing.T) {
-	ctx := context.Background()
+	sqlStore := SetupTestStore(t)
+	require.NotEmpty(t, sqlStore)
+
 	currency1 := createRandomCurrency(t)
 
-	err := testDB.Queries.DeleteCurrency(ctx, currency1.CurrencyCode)
+	err := sqlStore.Queries.DeleteCurrency(ctx, currency1.CurrencyCode)
 	require.NoError(t, err)
 
-	currency2, err := testDB.Queries.GetCurrency(ctx, currency1.CurrencyCode)
+	currency2, err := sqlStore.Queries.GetCurrency(ctx, currency1.CurrencyCode)
 	require.NoError(t, err)
 	require.False(t, currency2.IsActive)
+
+	defer CleanupDB(t)
 }

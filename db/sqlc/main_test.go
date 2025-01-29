@@ -51,7 +51,7 @@ func setupTestPool() (*pgxpool.Pool, error) {
 
 // !DropAllData removes all data from the database
 func DropAllData() error {
-	sqlStore, err := getSQLStore(testStore)
+	sqlStore, err := GetSQLStore(testStore)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 	testStore, err = NewTestDB(config)
-	sqlStore, err := getSQLStore(testStore)
+	sqlStore, err := GetSQLStore(testStore)
 	if err != nil {
 		log.Fatalf("Failed to get SQL store: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// ! CleanupDB provides a helper function for cleaning up the test database between tests.
+// ! CleanupDB provides a helper function for cleaning up the test database betweesn tests.
 func CleanupDB(t *testing.T) {
 	t.Helper()
 	if err := DropAllData(); err != nil {
