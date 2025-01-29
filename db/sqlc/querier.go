@@ -6,12 +6,14 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
 type Querier interface {
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateAccountType(ctx context.Context, arg CreateAccountTypeParams) (AccountType, error)
 	CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (AccountCurrency, error)
+	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateTransactionStatus(ctx context.Context, arg CreateTransactionStatusParams) (TransactionStatus, error)
 	CreateTransactionType(ctx context.Context, arg CreateTransactionTypeParams) (TransactionType, error)
@@ -23,23 +25,33 @@ type Querier interface {
 	DeleteTransactionType(ctx context.Context, typeCode string) error
 	DeleteUser(ctx context.Context, userID int32) error
 	GetAccount(ctx context.Context, accountID int32) (Account, error)
+	GetAccountBalance(ctx context.Context, accountID sql.NullInt32) (interface{}, error)
 	GetAccountForUpdate(ctx context.Context, accountID int32) (Account, error)
+	GetAccountStatement(ctx context.Context, arg GetAccountStatementParams) ([]GetAccountStatementRow, error)
 	GetActiveTransactionStatus(ctx context.Context, dollar_1 []string) ([]TransactionStatus, error)
 	GetCurrency(ctx context.Context, currencyCode string) (AccountCurrency, error)
+	GetEntry(ctx context.Context, id int64) (Entry, error)
 	GetTransaction(ctx context.Context, transactionID int32) (Transaction, error)
+	GetTransactionBalance(ctx context.Context, fromAccountID sql.NullInt32) (interface{}, error)
+	GetTransactionByReference(ctx context.Context, referenceNumber sql.NullString) (Transaction, error)
+	GetTransactionStatement(ctx context.Context, arg GetTransactionStatementParams) ([]GetTransactionStatementRow, error)
 	GetTransactionStatus(ctx context.Context, statusCode string) (TransactionStatus, error)
 	GetTransactionType(ctx context.Context, typeCode string) (TransactionType, error)
 	GetTransactionsByDateRange(ctx context.Context, arg GetTransactionsByDateRangeParams) ([]Transaction, error)
+	GetTransactionsByStatus(ctx context.Context, statusCode string) ([]Transaction, error)
 	GetUser(ctx context.Context, userID int32) (User, error)
 	HardDeleteAccount(ctx context.Context, accountID int32) error
 	HardDeleteAccountType(ctx context.Context, accountType string) error
 	HardDeleteCurrency(ctx context.Context, currencyCode string) error
+	HardDeleteEntries(ctx context.Context, accountID sql.NullInt32) error
 	HardDeleteTransactionStatus(ctx context.Context, statusCode string) error
 	HardDeleteTransactionType(ctx context.Context, typeCode string) error
 	HardDeleteUser(ctx context.Context, userID int32) error
+	ListAccountTransactions(ctx context.Context, arg ListAccountTransactionsParams) ([]Transaction, error)
 	ListAccountTypes(ctx context.Context) ([]AccountType, error)
 	ListAccountsByUser(ctx context.Context, userID int32) ([]Account, error)
 	ListCurrencies(ctx context.Context) ([]AccountCurrency, error)
+	ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error)
 	ListTransactionStatus(ctx context.Context) ([]TransactionStatus, error)
 	ListTransactionTypes(ctx context.Context) ([]TransactionType, error)
 	ListTransactionsByAccount(ctx context.Context, arg ListTransactionsByAccountParams) ([]Transaction, error)

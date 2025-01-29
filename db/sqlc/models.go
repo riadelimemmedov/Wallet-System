@@ -56,6 +56,13 @@ type AuditTrail struct {
 	CreatedAt time.Time      `json:"created_at"`
 }
 
+type Entry struct {
+	ID        int64          `json:"id"`
+	AccountID sql.NullInt32  `json:"account_id"`
+	Amount    pgtype.Numeric `json:"amount"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
 type Transaction struct {
 	TransactionID   int32          `json:"transaction_id"`
 	FromAccountID   sql.NullInt32  `json:"from_account_id"`
@@ -65,6 +72,7 @@ type Transaction struct {
 	CurrencyCode    string         `json:"currency_code"`
 	ExchangeRate    pgtype.Numeric `json:"exchange_rate"`
 	StatusCode      string         `json:"status_code"`
+	IsCompleted     bool           `json:"is_completed"`
 	Description     sql.NullString `json:"description"`
 	ReferenceNumber sql.NullString `json:"reference_number"`
 	TransactionDate time.Time      `json:"transaction_date"`

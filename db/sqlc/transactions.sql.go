@@ -27,7 +27,7 @@ INSERT INTO transactions (
     transaction_date
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-) RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, description, reference_number, transaction_date, created_at, updated_at
+) RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
 `
 
 type CreateTransactionParams struct {
@@ -66,6 +66,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.CurrencyCode,
 		&i.ExchangeRate,
 		&i.StatusCode,
+		&i.IsCompleted,
 		&i.Description,
 		&i.ReferenceNumber,
 		&i.TransactionDate,
@@ -76,7 +77,7 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 }
 
 const getTransaction = `-- name: GetTransaction :one
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, description, reference_number, transaction_date, created_at, updated_at FROM transactions
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at FROM transactions
 WHERE transaction_id = $1
 `
 
@@ -92,6 +93,7 @@ func (q *Queries) GetTransaction(ctx context.Context, transactionID int32) (Tran
 		&i.CurrencyCode,
 		&i.ExchangeRate,
 		&i.StatusCode,
+		&i.IsCompleted,
 		&i.Description,
 		&i.ReferenceNumber,
 		&i.TransactionDate,
@@ -101,8 +103,105 @@ func (q *Queries) GetTransaction(ctx context.Context, transactionID int32) (Tran
 	return i, err
 }
 
+const getTransactionBalance = `-- name: GetTransactionBalance :one
+SELECT COALESCE(SUM(amount), 0) as balance
+FROM transactions
+WHERE from_account_id = $1 OR to_account_id = $1
+`
+
+func (q *Queries) GetTransactionBalance(ctx context.Context, fromAccountID sql.NullInt32) (interface{}, error) {
+	row := q.db.QueryRow(ctx, getTransactionBalance, fromAccountID)
+	var balance interface{}
+	err := row.Scan(&balance)
+	return balance, err
+}
+
+const getTransactionByReference = `-- name: GetTransactionByReference :one
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+FROM transactions
+WHERE reference_number = $1
+`
+
+func (q *Queries) GetTransactionByReference(ctx context.Context, referenceNumber sql.NullString) (Transaction, error) {
+	row := q.db.QueryRow(ctx, getTransactionByReference, referenceNumber)
+	var i Transaction
+	err := row.Scan(
+		&i.TransactionID,
+		&i.FromAccountID,
+		&i.ToAccountID,
+		&i.TypeCode,
+		&i.Amount,
+		&i.CurrencyCode,
+		&i.ExchangeRate,
+		&i.StatusCode,
+		&i.IsCompleted,
+		&i.Description,
+		&i.ReferenceNumber,
+		&i.TransactionDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getTransactionStatement = `-- name: GetTransactionStatement :many
+SELECT transaction_id, from_account_id, to_account_id, 
+        amount, currency_code, status_code, description,
+        transaction_date
+FROM transactions
+WHERE (from_account_id = $1 OR to_account_id = $1)
+    AND transaction_date BETWEEN $2 AND $3
+ORDER BY transaction_date DESC
+`
+
+type GetTransactionStatementParams struct {
+	FromAccountID     sql.NullInt32 `json:"from_account_id"`
+	TransactionDate   time.Time     `json:"transaction_date"`
+	TransactionDate_2 time.Time     `json:"transaction_date_2"`
+}
+
+type GetTransactionStatementRow struct {
+	TransactionID   int32          `json:"transaction_id"`
+	FromAccountID   sql.NullInt32  `json:"from_account_id"`
+	ToAccountID     sql.NullInt32  `json:"to_account_id"`
+	Amount          pgtype.Numeric `json:"amount"`
+	CurrencyCode    string         `json:"currency_code"`
+	StatusCode      string         `json:"status_code"`
+	Description     sql.NullString `json:"description"`
+	TransactionDate time.Time      `json:"transaction_date"`
+}
+
+func (q *Queries) GetTransactionStatement(ctx context.Context, arg GetTransactionStatementParams) ([]GetTransactionStatementRow, error) {
+	rows, err := q.db.Query(ctx, getTransactionStatement, arg.FromAccountID, arg.TransactionDate, arg.TransactionDate_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetTransactionStatementRow{}
+	for rows.Next() {
+		var i GetTransactionStatementRow
+		if err := rows.Scan(
+			&i.TransactionID,
+			&i.FromAccountID,
+			&i.ToAccountID,
+			&i.Amount,
+			&i.CurrencyCode,
+			&i.StatusCode,
+			&i.Description,
+			&i.TransactionDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTransactionsByDateRange = `-- name: GetTransactionsByDateRange :many
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, description, reference_number, transaction_date, created_at, updated_at FROM transactions
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at FROM transactions
 WHERE transaction_date BETWEEN $1 AND $2
 ORDER BY transaction_date DESC
 `
@@ -130,6 +229,98 @@ func (q *Queries) GetTransactionsByDateRange(ctx context.Context, arg GetTransac
 			&i.CurrencyCode,
 			&i.ExchangeRate,
 			&i.StatusCode,
+			&i.IsCompleted,
+			&i.Description,
+			&i.ReferenceNumber,
+			&i.TransactionDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTransactionsByStatus = `-- name: GetTransactionsByStatus :many
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+FROM transactions
+WHERE status_code = $1
+ORDER BY transaction_date DESC
+`
+
+func (q *Queries) GetTransactionsByStatus(ctx context.Context, statusCode string) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getTransactionsByStatus, statusCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Transaction{}
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.TransactionID,
+			&i.FromAccountID,
+			&i.ToAccountID,
+			&i.TypeCode,
+			&i.Amount,
+			&i.CurrencyCode,
+			&i.ExchangeRate,
+			&i.StatusCode,
+			&i.IsCompleted,
+			&i.Description,
+			&i.ReferenceNumber,
+			&i.TransactionDate,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAccountTransactions = `-- name: ListAccountTransactions :many
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+FROM transactions
+WHERE from_account_id = $1 OR to_account_id = $1
+ORDER BY transaction_date DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListAccountTransactionsParams struct {
+	FromAccountID sql.NullInt32 `json:"from_account_id"`
+	Limit         int32         `json:"limit"`
+	Offset        int32         `json:"offset"`
+}
+
+func (q *Queries) ListAccountTransactions(ctx context.Context, arg ListAccountTransactionsParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, listAccountTransactions, arg.FromAccountID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Transaction{}
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.TransactionID,
+			&i.FromAccountID,
+			&i.ToAccountID,
+			&i.TypeCode,
+			&i.Amount,
+			&i.CurrencyCode,
+			&i.ExchangeRate,
+			&i.StatusCode,
+			&i.IsCompleted,
 			&i.Description,
 			&i.ReferenceNumber,
 			&i.TransactionDate,
@@ -147,7 +338,7 @@ func (q *Queries) GetTransactionsByDateRange(ctx context.Context, arg GetTransac
 }
 
 const listTransactionsByAccount = `-- name: ListTransactionsByAccount :many
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, description, reference_number, transaction_date, created_at, updated_at FROM transactions
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at FROM transactions
 WHERE from_account_id = $1 OR to_account_id = $1
 ORDER BY transaction_date DESC
 LIMIT $2 OFFSET $3
@@ -177,6 +368,7 @@ func (q *Queries) ListTransactionsByAccount(ctx context.Context, arg ListTransac
 			&i.CurrencyCode,
 			&i.ExchangeRate,
 			&i.StatusCode,
+			&i.IsCompleted,
 			&i.Description,
 			&i.ReferenceNumber,
 			&i.TransactionDate,
@@ -197,7 +389,7 @@ const updateTransactionStatus = `-- name: UpdateTransactionStatus :one
 UPDATE transactions
 SET status_code = $2
 WHERE transaction_id = $1
-RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, description, reference_number, transaction_date, created_at, updated_at
+RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
 `
 
 type UpdateTransactionStatusParams struct {
@@ -217,6 +409,7 @@ func (q *Queries) UpdateTransactionStatus(ctx context.Context, arg UpdateTransac
 		&i.CurrencyCode,
 		&i.ExchangeRate,
 		&i.StatusCode,
+		&i.IsCompleted,
 		&i.Description,
 		&i.ReferenceNumber,
 		&i.TransactionDate,
