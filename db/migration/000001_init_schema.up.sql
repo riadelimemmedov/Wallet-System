@@ -86,6 +86,7 @@ CREATE TABLE transactions (
     currency_code VARCHAR(3) NOT NULL REFERENCES account_currencies(currency_code),
     exchange_rate DECIMAL(10, 6),
     status_code VARCHAR(50) NOT NULL REFERENCES transaction_status(status_code),
+    is_completed BOOLEAN NOT NULL DEFAULT false,
     description TEXT,
     reference_number VARCHAR(50) UNIQUE,
     transaction_date TIMESTAMPTZ NOT NULL,
@@ -108,7 +109,6 @@ CREATE TABLE transactions (
 );
 
 CREATE INDEX idx_transactions_accounts ON transactions(from_account_id, to_account_id);
-
 CREATE INDEX idx_transactions_date ON transactions(transaction_date);
 
 --! Audit Trail table - tracks all important changes
@@ -125,6 +125,17 @@ CREATE TABLE audit_trail (
 );
 
 CREATE INDEX idx_audit_trail_composite ON audit_trail(table_name, record_id);
+
+
+--! Create entry table
+CREATE TABLE entries (
+    id BIGSERIAL PRIMARY KEY,
+    account_id INTEGER REFERENCES accounts(account_id),
+    amount DECIMAL(32,2) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_entries_account ON entries(account_id);
 
 -- -- Insert basic reference data
 -- INSERT INTO
