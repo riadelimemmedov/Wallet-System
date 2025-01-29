@@ -6,9 +6,16 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/shopspring/decimal"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
+
+var (
+	minMoney int64 = 0
+	maxMoney int64 = 1000000
+)
 
 // const numbers = "0123456789"
 
@@ -166,4 +173,10 @@ func RandomCurrencySymbol(code string) string {
 		return symbol
 	}
 	return "?"
+}
+
+// ! RandomMoney generates a random amount of money between minMoney and maxMoney
+func RandomMoney() decimal.Decimal {
+	amount := decimal.New(rand.Int63n(maxMoney), -2)
+	return amount
 }

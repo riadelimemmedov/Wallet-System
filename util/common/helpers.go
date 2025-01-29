@@ -38,3 +38,14 @@ func GetEnvAsDuration(key string, defaultVal time.Duration) time.Duration {
 	}
 	return defaultVal
 }
+
+// !RandomNumeric generates a random numeric value between 0-10000 with 2 decimal places
+func RandomNumeric() (pgtype.Numeric, error) {
+	return SetNumeric(fmt.Sprintf("%.2f", RandomFloat(0, 10000)))
+}
+
+// ! RandomInterestRate generates a random interest rate between 1.1%-99.99%
+func RandomInterestRate() (pgtype.Numeric, error) {
+	rate := RandomFloat(1.1, 99.99)
+	return SetNumeric(fmt.Sprintf("%.2f", rate))
+}
