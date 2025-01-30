@@ -17,7 +17,7 @@ func createRandomTransactionStatus(t *testing.T) (TransactionStatus, error) {
 	require.NotEmpty(t, sqlStore)
 
 	arg := CreateTransactionStatusParams{
-		StatusCode:  common.RandomString(5),
+		StatusCode:  common.RandomTransactionStatus(),
 		Description: common.RandomString(30),
 	}
 

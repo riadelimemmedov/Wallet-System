@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/jackc/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -179,4 +180,48 @@ func RandomCurrencySymbol(code string) string {
 func RandomMoney() decimal.Decimal {
 	amount := decimal.New(rand.Int63n(maxMoney), -2)
 	return amount
+}
+
+// !RandomNumeric generates a random numeric value between 0-10000 with 2 decimal places
+func RandomNumeric() (pgtype.Numeric, error) {
+	return SetNumeric(fmt.Sprintf("%.2f", RandomFloat(0, 10000)))
+}
+
+// ! RandomNegativeNumeric generates a random numeric value between -10000 and 0 with 2 decimal places
+func RandomNegativeNumeric() (pgtype.Numeric, error) {
+	return SetNumeric(fmt.Sprintf("%.2f", RandomFloat(-10000, 0)))
+}
+
+// ! RandomInterestRate generates a random interest rate between 1.1%-99.99%
+func RandomInterestRate() (pgtype.Numeric, error) {
+	rate := RandomFloat(1.1, 99.99)
+	return SetNumeric(fmt.Sprintf("%.2f", rate))
+}
+
+// ! RandomTransactionType generates a random transaction type from predefined types
+func RandomTransactionType() string {
+	transactionTypes := []string{
+		"TRANSFER",
+		"DEPOSIT",
+		"WITHDRAWAL",
+		"PAYMENT",
+		"REFUND",
+		"FEE",
+		"INTEREST",
+	}
+	return transactionTypes[rand.Intn(len(transactionTypes))]
+}
+
+// ! RandomTransactionStatus generates a random transaction status from predefined statuses
+func RandomTransactionStatus() string {
+	transactionStatuses := []string{
+		"PENDING",
+		"COMPLETED",
+		"FAILED",
+		"CANCELLED",
+		"REJECTED",
+		"REVERSED",
+		"PROCESSING",
+	}
+	return transactionStatuses[rand.Intn(len(transactionStatuses))]
 }

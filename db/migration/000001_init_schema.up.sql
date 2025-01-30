@@ -1,4 +1,4 @@
---! Users table - stores user information
+--! Users table - stores user information +
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -19,7 +19,7 @@ CREATE TABLE users (
 
 CREATE INDEX idx_users_composite ON users(user_id, username, email, is_active);
 
---! Account Types Reference Table
+--! Account Types Reference Table +
 CREATE TABLE account_types (
     account_type VARCHAR(50) PRIMARY KEY,
     description TEXT NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE account_types (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---! Account Currencies Reference Table
+--! Account Currencies Reference Table +
 CREATE TABLE account_currencies (
     currency_code VARCHAR(3) PRIMARY KEY,
     currency_name VARCHAR(50) NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE account_currencies (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---! Accounts table - stores account information
+--! Accounts table - stores account information +
 CREATE TABLE accounts (
     account_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id),
@@ -58,7 +58,7 @@ CREATE TABLE accounts (
 
 CREATE INDEX idx_accounts_composite ON accounts(account_id, user_id);
 
---! Transaction Types Reference Table
+--! Transaction Types Reference Table +
 CREATE TABLE transaction_types (
     type_code VARCHAR(50) PRIMARY KEY,
     description TEXT NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE transaction_types (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---! Transaction Status Reference Table
+--! Transaction Status Reference Table +
 CREATE TABLE transaction_status (
     status_code VARCHAR(50) PRIMARY KEY,
     description TEXT NOT NULL,

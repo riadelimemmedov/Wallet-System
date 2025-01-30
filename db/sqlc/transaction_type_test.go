@@ -16,7 +16,7 @@ func createRandomTransactionType(t *testing.T) TransactionType {
 	sqlStore := SetupTestStore(t)
 	require.NotEmpty(t, sqlStore)
 
-	typeCode := common.RandomString(5)
+	typeCode := common.RandomTransactionType()
 	description := common.RandomString(30)
 
 	arg := CreateTransactionTypeParams{
