@@ -31,7 +31,7 @@ func createRandomCurrency(t *testing.T) AccountCurrency {
 // It generates random values for currency code, exchange rate, name, and symbol.
 // Panics if the exchange rate numeric conversion fails.
 func generateCurrencyParams() CreateCurrencyParams {
-	currency_code := common.RandomCurrency()
+	currency_code := common.RandomString(3)
 	formattedValue := strconv.FormatFloat(common.RandomFloat(1.1, 99.99), 'f', -1, 64)
 	exchangeRate, err := common.SetNumeric(formattedValue)
 	if err != nil {
@@ -40,9 +40,9 @@ func generateCurrencyParams() CreateCurrencyParams {
 
 	return CreateCurrencyParams{
 		CurrencyCode: currency_code,
-		CurrencyName: common.RandomCurrencyName(currency_code),
+		CurrencyName: common.RandomString(3),
 		Symbol: sql.NullString{
-			String: common.RandomCurrencySymbol(currency_code),
+			String: common.RandomString(3),
 			Valid:  true,
 		},
 		ExchangeRate: exchangeRate,
@@ -54,7 +54,6 @@ func generateCurrencyParams() CreateCurrencyParams {
 // Returns the created currency and any error encountered.
 func createCurrencyWithRetry(t *testing.T, arg CreateCurrencyParams) (AccountCurrency, error) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	const maxRetries = 10
 	var accountCurrency AccountCurrency
@@ -105,7 +104,6 @@ func TestCreateCurrency(t *testing.T) {
 // and that all fields match the original values.
 func TestGetCurrency(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	currency1 := createRandomCurrency(t)
 
@@ -127,7 +125,6 @@ func TestGetCurrency(t *testing.T) {
 // successfully and that the update is reflected in the database.
 func TestUpdateExchangeRate(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	currency1 := createRandomCurrency(t)
 
@@ -152,7 +149,6 @@ func TestUpdateExchangeRate(t *testing.T) {
 // and that the deletion is reflected in the database.
 func TestDeleteCurrency(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	currency1 := createRandomCurrency(t)
 

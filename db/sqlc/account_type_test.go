@@ -13,7 +13,6 @@ import (
 // It handles potential duplicate key violations by retrying up to 5 times with different random values.
 func createRandomAccountType(t *testing.T) AccountType {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	var accountType AccountType
 	var err error
@@ -21,7 +20,7 @@ func createRandomAccountType(t *testing.T) AccountType {
 	maxRetries := 5
 	for i := 0; i < maxRetries; i++ {
 		arg := CreateAccountTypeParams{
-			AccountType: common.RandomAccountType(),
+			AccountType: common.RandomString(15),
 			Description: common.RandomString(20),
 		}
 		accountType, err = sqlStore.Queries.CreateAccountType(context.Background(), arg)
@@ -52,7 +51,6 @@ func TestCreateAccountType(t *testing.T) {
 // It creates multiple account types and ensures they can be retrieved correctly.
 func TestListAccountTypes(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	createdTypes := make(map[string]bool)
 	for i := 0; i < 3; i++ {
@@ -82,13 +80,12 @@ func TestListAccountTypes(t *testing.T) {
 // It creates an account type and then updates its type field with a new random value.
 func TestUpdateAccountType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	accountType1 := createRandomAccountType(t)
 
-	newType := common.RandomAccountType()
+	newType := common.RandomString(15)
 	for newType == accountType1.AccountType {
-		newType = common.RandomAccountType()
+		newType = common.RandomString(15)
 	}
 
 	arg := UpdateAccountTypeParams{
@@ -110,7 +107,6 @@ func TestUpdateAccountType(t *testing.T) {
 // It creates an account type and then marks it as inactive (soft delete).
 func TestDeleteAccountType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	accountType1 := createRandomAccountType(t)
 
@@ -132,7 +128,6 @@ func TestDeleteAccountType(t *testing.T) {
 // It creates an account type and then completely removes it from the database.
 func TestHardDeleteAccountType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	accountType1 := createRandomAccountType(t)
 

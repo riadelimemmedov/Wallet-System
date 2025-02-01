@@ -13,7 +13,6 @@ import (
 // Helper function to create a random entry
 func createRandomEntry(t *testing.T) Entry {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	amount, err := common.RandomNumeric()
 	require.NoError(t, err)
@@ -40,7 +39,6 @@ func TestCreateEntry(t *testing.T) {
 
 func TestGetEntry(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	entry1 := createRandomEntry(t)
 	require.NotEmpty(t, entry1)

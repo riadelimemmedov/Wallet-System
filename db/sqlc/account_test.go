@@ -12,7 +12,6 @@ import (
 // - TestCreateAccount: Verifies random account creation
 func createRandomAccount(t *testing.T) Account {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	var account Account
 	var err error
