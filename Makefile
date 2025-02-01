@@ -102,11 +102,20 @@ create-migration:
 pull-sqlc:
 	docker pull sqlc/sqlc
 
+#! Testing purpose command for db migrations
 init-sqlc:
 	docker run --rm -v "%cd%:/src" -w /src sqlc/sqlc init
 
 generate-sqlc:
 	docker run --rm -v "%cd%:/src" -w /src sqlc/sqlc generate
+
+create_migration:
+	migrate create -ext sql -dir db/migration -seq init_schema
+migrate_up:
+	migrate -path db/migration/ -database "postgresql://postgres:123321@localhost:6432/simple_bank?sslmode=disable" --verbose up 2(migration folder example)
+	migrate -path db/migration/ -database "postgresql://postgres:123321@localhost:6432/simple_bank_test?sslmode=disable" force 1
+migrate_down:
+	migrate -path db/migration/ -database "postgresql://postgres:123321@localhost:6432/simple_bank?sslmode=disable" --verbose down
 
 #! Testing commands
 .PHONY: test clean-test
