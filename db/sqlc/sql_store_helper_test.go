@@ -9,6 +9,7 @@ import (
 // ! SetupTestStore initializes and returns a SQLStore instance for testing.
 func SetupTestStore(t *testing.T) *SQLStore {
 	sqlStore, err := GetSQLStore(testStore)
+	require.NotEmpty(t, sqlStore)
 	require.NoError(t, err)
 	return sqlStore
 }
