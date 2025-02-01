@@ -7,6 +7,8 @@ package db
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -19,10 +21,14 @@ type Querier interface {
 	CreateTransactionType(ctx context.Context, arg CreateTransactionTypeParams) (TransactionType, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAccount(ctx context.Context, accountID int32) error
+	DeleteAccountTransactions(ctx context.Context, fromAccountID sql.NullInt32) error
 	DeleteAccountType(ctx context.Context, accountType string) error
 	DeleteCurrency(ctx context.Context, currencyCode string) error
+	DeleteTransaction(ctx context.Context, transactionNumber uuid.UUID) error
 	DeleteTransactionStatus(ctx context.Context, statusCode string) error
 	DeleteTransactionType(ctx context.Context, typeCode string) error
+	DeleteTransactionsByDateRange(ctx context.Context, arg DeleteTransactionsByDateRangeParams) error
+	DeleteTransactionsByStatus(ctx context.Context, statusCode string) error
 	DeleteUser(ctx context.Context, userID int32) error
 	GetAccount(ctx context.Context, accountID int32) (Account, error)
 	GetAccountBalance(ctx context.Context, accountID sql.NullInt32) (interface{}, error)
