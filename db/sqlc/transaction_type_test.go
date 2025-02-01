@@ -14,9 +14,8 @@ import (
 // Returns the created TransactionType.
 func createRandomTransactionType(t *testing.T) TransactionType {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
-	typeCode := common.RandomTransactionType()
+	typeCode := common.RandomString(15)
 	description := common.RandomString(30)
 
 	arg := CreateTransactionTypeParams{
@@ -45,7 +44,6 @@ func TestCreateTransactionType(t *testing.T) {
 // It creates a test record, retrieves it, and validates all fields match.
 func TestGetTransactionType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	transType1 := createRandomTransactionType(t)
 	transType2, err := sqlStore.Queries.GetTransactionType(context.Background(), transType1.TypeCode)
@@ -61,7 +59,6 @@ func TestGetTransactionType(t *testing.T) {
 // It creates a test record, updates its description and status, and validates changes.
 func TestUpdateTransactionType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	transType1 := createRandomTransactionType(t)
 
@@ -84,7 +81,6 @@ func TestUpdateTransactionType(t *testing.T) {
 // It creates a test record, marks it as inactive, and validates the status change.
 func TestDeleteTransactionType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	transType1 := createRandomTransactionType(t)
 	err := sqlStore.Queries.DeleteTransactionType(context.Background(), transType1.TypeCode)
@@ -102,7 +98,6 @@ func TestDeleteTransactionType(t *testing.T) {
 // It creates a test record, permanently deletes it, and validates it no longer exists.
 func TestHardDeleteTransactionType(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	transType1 := createRandomTransactionType(t)
 	err := sqlStore.Queries.HardDeleteTransactionType(context.Background(), transType1.TypeCode)

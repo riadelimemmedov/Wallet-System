@@ -10,6 +10,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 )
 
@@ -27,7 +28,7 @@ INSERT INTO transactions (
     transaction_date
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-) RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+) RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number
 `
 
 type CreateTransactionParams struct {
@@ -72,12 +73,58 @@ func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionPa
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TransactionNumber,
 	)
 	return i, err
 }
 
+const deleteAccountTransactions = `-- name: DeleteAccountTransactions :exec
+DELETE FROM transactions
+WHERE from_account_id = $1 OR to_account_id = $1
+`
+
+func (q *Queries) DeleteAccountTransactions(ctx context.Context, fromAccountID sql.NullInt32) error {
+	_, err := q.db.Exec(ctx, deleteAccountTransactions, fromAccountID)
+	return err
+}
+
+const deleteTransaction = `-- name: DeleteTransaction :exec
+DELETE FROM transactions 
+WHERE transaction_number = $1
+`
+
+func (q *Queries) DeleteTransaction(ctx context.Context, transactionNumber uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTransaction, transactionNumber)
+	return err
+}
+
+const deleteTransactionsByDateRange = `-- name: DeleteTransactionsByDateRange :exec
+DELETE FROM transactions 
+WHERE transaction_date BETWEEN $1 AND $2
+`
+
+type DeleteTransactionsByDateRangeParams struct {
+	StartDate time.Time `json:"start_date"`
+	EndDate   time.Time `json:"end_date"`
+}
+
+func (q *Queries) DeleteTransactionsByDateRange(ctx context.Context, arg DeleteTransactionsByDateRangeParams) error {
+	_, err := q.db.Exec(ctx, deleteTransactionsByDateRange, arg.StartDate, arg.EndDate)
+	return err
+}
+
+const deleteTransactionsByStatus = `-- name: DeleteTransactionsByStatus :exec
+DELETE FROM transactions 
+WHERE status_code = $1
+`
+
+func (q *Queries) DeleteTransactionsByStatus(ctx context.Context, statusCode string) error {
+	_, err := q.db.Exec(ctx, deleteTransactionsByStatus, statusCode)
+	return err
+}
+
 const getTransaction = `-- name: GetTransaction :one
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at FROM transactions
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number FROM transactions
 WHERE transaction_id = $1
 `
 
@@ -99,6 +146,7 @@ func (q *Queries) GetTransaction(ctx context.Context, transactionID int32) (Tran
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TransactionNumber,
 	)
 	return i, err
 }
@@ -117,7 +165,7 @@ func (q *Queries) GetTransactionBalance(ctx context.Context, fromAccountID sql.N
 }
 
 const getTransactionByReference = `-- name: GetTransactionByReference :one
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number
 FROM transactions
 WHERE reference_number = $1
 `
@@ -140,6 +188,7 @@ func (q *Queries) GetTransactionByReference(ctx context.Context, referenceNumber
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TransactionNumber,
 	)
 	return i, err
 }
@@ -201,7 +250,7 @@ func (q *Queries) GetTransactionStatement(ctx context.Context, arg GetTransactio
 }
 
 const getTransactionsByDateRange = `-- name: GetTransactionsByDateRange :many
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at FROM transactions
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number FROM transactions
 WHERE transaction_date BETWEEN $1 AND $2
 ORDER BY transaction_date DESC
 `
@@ -235,6 +284,7 @@ func (q *Queries) GetTransactionsByDateRange(ctx context.Context, arg GetTransac
 			&i.TransactionDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TransactionNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -247,7 +297,7 @@ func (q *Queries) GetTransactionsByDateRange(ctx context.Context, arg GetTransac
 }
 
 const getTransactionsByStatus = `-- name: GetTransactionsByStatus :many
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number
 FROM transactions
 WHERE status_code = $1
 ORDER BY transaction_date DESC
@@ -277,6 +327,7 @@ func (q *Queries) GetTransactionsByStatus(ctx context.Context, statusCode string
 			&i.TransactionDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TransactionNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -289,7 +340,7 @@ func (q *Queries) GetTransactionsByStatus(ctx context.Context, statusCode string
 }
 
 const listAccountTransactions = `-- name: ListAccountTransactions :many
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number
 FROM transactions
 WHERE from_account_id = $1 OR to_account_id = $1
 ORDER BY transaction_date DESC
@@ -326,6 +377,7 @@ func (q *Queries) ListAccountTransactions(ctx context.Context, arg ListAccountTr
 			&i.TransactionDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TransactionNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -338,7 +390,7 @@ func (q *Queries) ListAccountTransactions(ctx context.Context, arg ListAccountTr
 }
 
 const listTransactionsByAccount = `-- name: ListTransactionsByAccount :many
-SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at FROM transactions
+SELECT transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number FROM transactions
 WHERE from_account_id = $1 OR to_account_id = $1
 ORDER BY transaction_date DESC
 LIMIT $2 OFFSET $3
@@ -374,6 +426,7 @@ func (q *Queries) ListTransactionsByAccount(ctx context.Context, arg ListTransac
 			&i.TransactionDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TransactionNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -389,7 +442,7 @@ const updateTransactionStatus = `-- name: UpdateTransactionStatus :one
 UPDATE transactions
 SET status_code = $2
 WHERE transaction_id = $1
-RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at
+RETURNING transaction_id, from_account_id, to_account_id, type_code, amount, currency_code, exchange_rate, status_code, is_completed, description, reference_number, transaction_date, created_at, updated_at, transaction_number
 `
 
 type UpdateTransactionStatusParams struct {
@@ -415,6 +468,7 @@ func (q *Queries) UpdateTransactionStatus(ctx context.Context, arg UpdateTransac
 		&i.TransactionDate,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TransactionNumber,
 	)
 	return i, err
 }

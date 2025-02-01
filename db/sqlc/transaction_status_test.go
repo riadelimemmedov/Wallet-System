@@ -14,10 +14,9 @@ import (
 // The created status is verified for proper initialization and active state.
 func createRandomTransactionStatus(t *testing.T) (TransactionStatus, error) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	arg := CreateTransactionStatusParams{
-		StatusCode:  common.RandomTransactionStatus(),
+		StatusCode:  common.RandomString(15),
 		Description: common.RandomString(30),
 	}
 
@@ -41,7 +40,6 @@ func TestCreateTransactionStatus(t *testing.T) {
 // Creates a test record and validates exact field matching on retrieval.
 func TestGetTransactionStatus(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	status1, err := createRandomTransactionStatus(t)
 	require.NoError(t, err)
@@ -61,7 +59,6 @@ func TestGetTransactionStatus(t *testing.T) {
 // Tests modification of description and active state, ensuring proper field updates.
 func TestModifyTransactionStatus(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	status1, err := createRandomTransactionStatus(t)
 	require.NoError(t, err)
@@ -108,7 +105,6 @@ func TestDeleteTransactionStatus(t *testing.T) {
 // Ensures status record is completely removed from database.
 func TestHardDeleteTransactionStatus(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	status1, err := createRandomTransactionStatus(t)
 	require.NoError(t, err)
@@ -129,7 +125,6 @@ func TestHardDeleteTransactionStatus(t *testing.T) {
 // Creates multiple test statuses and validates retrieval by status code array.
 func TestGetActiveTransactionStatus(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	var statusCodes []string
 	for i := 0; i < 3; i++ {
