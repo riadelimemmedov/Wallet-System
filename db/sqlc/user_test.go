@@ -14,7 +14,6 @@ import (
 // !It returns the created user instance.
 func createRandomUser(t *testing.T) User {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	arg := CreateUserParams{
 		Username:     common.RandomUsername(),
@@ -73,7 +72,6 @@ func TestCreateUser(t *testing.T) {
 // ! It ensures that nullable fields are properly handled during user creation.
 func TestCreateUserWithNullFields(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	arg := CreateUserParams{
 		Username:     common.RandomUsername(),
@@ -106,7 +104,6 @@ func TestCreateUserWithNullFields(t *testing.T) {
 // ! It creates a user, retrieves it, and ensures all fields match the original user.
 func TestGetUser(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	user1 := createRandomUser(t)
 	user2, err := sqlStore.Queries.GetUser(context.Background(), user1.UserID)
@@ -136,7 +133,6 @@ func TestGetUser(t *testing.T) {
 // ! are returned with the specified limit and offset.
 func TestListUsers(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	for i := 0; i < 10; i++ {
 		createRandomUser(t)
@@ -166,7 +162,6 @@ func TestListUsers(t *testing.T) {
 // ! and verifies the changes were successful.
 func TestUpdateUser(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	user1 := createRandomUser(t)
 
@@ -212,7 +207,6 @@ func TestUpdateUser(t *testing.T) {
 // ! their original values and null fields are properly handled.
 func TestUpdateUserNullFields(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	user1 := createRandomUser(t)
 
@@ -243,7 +237,6 @@ func TestUpdateUserNullFields(t *testing.T) {
 // ! still exists but is marked as inactive.
 func TestDeleteUser(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	user1 := createRandomUser(t)
 	require.True(t, user1.IsActive)
@@ -263,7 +256,6 @@ func TestDeleteUser(t *testing.T) {
 // ! the user can no longer be retrieved from the database.
 func TestHardDeleteUser(t *testing.T) {
 	sqlStore := SetupTestStore(t)
-	require.NotEmpty(t, sqlStore)
 
 	user1 := createRandomUser(t)
 

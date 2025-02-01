@@ -66,3 +66,19 @@ FROM transactions
 WHERE from_account_id = $1 OR to_account_id = $1
 ORDER BY transaction_date DESC
 LIMIT $2 OFFSET $3;
+
+-- name: DeleteTransaction :exec
+DELETE FROM transactions 
+WHERE transaction_number = $1;
+
+-- name: DeleteAccountTransactions :exec
+DELETE FROM transactions
+WHERE from_account_id = $1 OR to_account_id = $1;
+
+-- name: DeleteTransactionsByDateRange :exec
+DELETE FROM transactions 
+WHERE transaction_date BETWEEN sqlc.arg('start_date') AND sqlc.arg('end_date');
+
+-- name: DeleteTransactionsByStatus :exec
+DELETE FROM transactions 
+WHERE status_code = $1;
