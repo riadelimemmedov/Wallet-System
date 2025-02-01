@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 )
 
@@ -64,20 +65,21 @@ type Entry struct {
 }
 
 type Transaction struct {
-	TransactionID   int32          `json:"transaction_id"`
-	FromAccountID   sql.NullInt32  `json:"from_account_id"`
-	ToAccountID     sql.NullInt32  `json:"to_account_id"`
-	TypeCode        string         `json:"type_code"`
-	Amount          pgtype.Numeric `json:"amount"`
-	CurrencyCode    string         `json:"currency_code"`
-	ExchangeRate    pgtype.Numeric `json:"exchange_rate"`
-	StatusCode      string         `json:"status_code"`
-	IsCompleted     bool           `json:"is_completed"`
-	Description     sql.NullString `json:"description"`
-	ReferenceNumber sql.NullString `json:"reference_number"`
-	TransactionDate time.Time      `json:"transaction_date"`
-	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       time.Time      `json:"updated_at"`
+	TransactionID     int32          `json:"transaction_id"`
+	FromAccountID     sql.NullInt32  `json:"from_account_id"`
+	ToAccountID       sql.NullInt32  `json:"to_account_id"`
+	TypeCode          string         `json:"type_code"`
+	Amount            pgtype.Numeric `json:"amount"`
+	CurrencyCode      string         `json:"currency_code"`
+	ExchangeRate      pgtype.Numeric `json:"exchange_rate"`
+	StatusCode        string         `json:"status_code"`
+	IsCompleted       bool           `json:"is_completed"`
+	Description       sql.NullString `json:"description"`
+	ReferenceNumber   sql.NullString `json:"reference_number"`
+	TransactionDate   time.Time      `json:"transaction_date"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	TransactionNumber uuid.UUID      `json:"transaction_number"`
 }
 
 type TransactionStatus struct {
