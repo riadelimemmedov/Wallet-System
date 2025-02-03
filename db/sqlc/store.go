@@ -28,8 +28,8 @@ func NewStore(connPool *pgxpool.Pool) Store {
 }
 
 // ! Method to get SQLStore safely
-func GetSQLStore(testStore Store) (*SQLStore, error) {
-	sqlStore, ok := testStore.(*SQLStore)
+func GetSQLStore(store Store) (*SQLStore, error) {
+	sqlStore, ok := store.(*SQLStore)
 	if !ok {
 		return nil, fmt.Errorf("invalid store type")
 	}

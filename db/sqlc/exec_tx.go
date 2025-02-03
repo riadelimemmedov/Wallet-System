@@ -5,19 +5,27 @@ import (
 	"fmt"
 )
 
-// ! execTx executes a function within a database transaction
-func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
+// ExecTx executes a function within a database transaction
+func (store *SQLStore) ExecTx(ctx context.Context, fn func(*Queries) error) error {
 	tx, err := store.Pool.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("error starting transaction: %v", err)
 	}
-	q := New(tx)
-	err = fn(q)
-	if err != nil {
-		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(ctx); rbErr != nil {
+				err = fmt.Errorf("tx error: %v, rollback error: %v", err, rbErr)
+			}
 		}
-		return err
+	}()
+
+	q := New(tx)
+	if err = fn(q); err != nil {
+		return fmt.Errorf("error executing transaction: %v", err)
 	}
-	return tx.Commit(ctx)
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("error committing transaction: %v", err)
+	}
+	return nil
 }
