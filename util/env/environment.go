@@ -10,10 +10,10 @@ import (
 func NewAppEnvironmentConfig(environment string) (config.AppConfig, error) {
 	appConfigMap := map[string]config.AppConfig{
 		"test": {
-			ConfigFilePath: "../../.env.test",
+			ConfigFilePath: "../../../.env.test",
 		},
 		"dev": {
-			ConfigFilePath: "../../.env.dev",
+			ConfigFilePath: "../../../.env.dev",
 		},
 	}
 	appConfig, exists := appConfigMap[environment]
