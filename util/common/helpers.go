@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"strings"
+
 	"github.com/jackc/pgtype"
 )
 
@@ -37,4 +39,12 @@ func GetEnvAsDuration(key string, defaultVal time.Duration) time.Duration {
 		}
 	}
 	return defaultVal
+}
+
+// ! Icontains check string icontains or not
+func Icontains(s, substr string) bool {
+	return strings.Contains(
+		strings.ToLower(s),
+		strings.ToLower(substr),
+	)
 }

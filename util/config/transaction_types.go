@@ -21,6 +21,14 @@ type TransactionStatus struct {
 	REVERSED  string
 }
 
+// Currency defines possible states of a currencies
+type Currency struct {
+	CODE   string
+	NAME   string
+	SYMBOL string
+	RATE   float64
+}
+
 // Pre-defined transaction types
 var TransactionTypes = TransactionType{
 	TRANSFER:   "TRANSFER",
@@ -40,4 +48,37 @@ var TransactionStatuses = TransactionStatus{
 	FAILED:    "FAILED",
 	CANCELLED: "CANCELLED",
 	REVERSED:  "REVERSED",
+}
+
+// Pre-defined currencies statuses
+var TransactionCurrencies = struct {
+	USD Currency
+	EUR Currency
+	GBP Currency
+	JPY Currency
+}{
+	USD: Currency{
+		CODE:   "USD",
+		NAME:   "US Dollar",
+		SYMBOL: "$",
+		RATE:   1.0,
+	},
+	EUR: Currency{
+		CODE:   "EUR",
+		NAME:   "Euro",
+		SYMBOL: "€",
+		RATE:   1.08,
+	},
+	GBP: Currency{
+		CODE:   "GBP",
+		NAME:   "British Pound",
+		SYMBOL: "£",
+		RATE:   1.26,
+	},
+	JPY: Currency{
+		CODE:   "Japanese Yen",
+		NAME:   "Japanese Yen",
+		SYMBOL: "¥",
+		RATE:   0.0067,
+	},
 }
