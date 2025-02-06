@@ -52,15 +52,15 @@ func CreateTransactionStatus(transactionStatus string) (db.TransactionStatus, er
 		}(),
 	}
 
-	status, err := store.Queries.CreateTransactionStatus(context.Background(), arg)
+	status, err := store.Queries.CreateTransactionStatus(ctx, arg) // Use the passed context here
 	if err != nil {
 		return db.TransactionStatus{}, fmt.Errorf("failed to create transaction status: %v", err)
 	}
 	return status, nil
 }
 
-// CreateCurrency creates a new currency or returns an existing one.
-func CreateCurrency(currencyCode string) (db.AccountCurrency, error) {
+// CreateCurrencyCode creates a new currency or returns an existing one.
+func CreateCurrencyCode(currencyCode string) (db.AccountCurrency, error) {
 	store, err := db.GetSQLStore(setup.GetStore())
 	if err != nil {
 		return db.AccountCurrency{}, fmt.Errorf("failed to get SQL store: %v", err)
@@ -130,4 +130,46 @@ func CreateCurrency(currencyCode string) (db.AccountCurrency, error) {
 	}
 
 	return currency, nil
+}
+
+// CreateTransactionType creates a new transaction type or returns an existing one.
+func CreateTransactionType(transactionType string) (db.TransactionType, error) {
+	store, err := db.GetSQLStore(setup.GetStore())
+	if err != nil {
+		return db.TransactionType{}, fmt.Errorf("failed to get SQL store: %v", err)
+	}
+
+	existingType, err := store.Queries.GetTransactionType(context.Background(), transactionType)
+
+	if err == nil && existingType.TypeCode == transactionType {
+		return existingType, nil
+	}
+
+	descriptions := map[string]string{
+		config.TransactionTypes.TRANSFER:   "Transfer of funds between accounts",
+		config.TransactionTypes.DEPOSIT:    "Deposit of funds into account",
+		config.TransactionTypes.WITHDRAWAL: "Withdrawal of funds from account",
+		config.TransactionTypes.PAYMENT:    "Payment for goods or services",
+		config.TransactionTypes.REFUND:     "Refund of previous transaction",
+		config.TransactionTypes.ADJUSTMENT: "Account balance adjustment",
+		config.TransactionTypes.FEE:        "Service or transaction fee",
+		config.TransactionTypes.INTEREST:   "Interest earned or charged",
+	}
+
+	arg := db.CreateTransactionTypeParams{
+		TypeCode: transactionType,
+		Description: func() string {
+			description, ok := descriptions[transactionType]
+			if !ok {
+				return config.TransactionTypes.TRANSFER
+			}
+			return description
+		}(),
+	}
+
+	transType, err := store.Queries.CreateTransactionType(context.Background(), arg)
+	if err != nil {
+		return db.TransactionType{}, fmt.Errorf("failed to create transaction type: %v", err)
+	}
+	return transType, nil
 }

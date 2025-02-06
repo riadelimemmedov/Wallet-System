@@ -3,85 +3,102 @@ package db
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/jackc/pgtype"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
 	"github.com/riad/banksystemendtoend/db/sqlc/transaction"
+	"github.com/riad/banksystemendtoend/util/config"
 	setup "github.com/riad/banksystemendtoend/util/db"
 	"github.com/riad/banksystemendtoend/util/schemas"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTransfer(t *testing.T) {
+	n := 3
+	existed := make(map[int]bool)
+	var wg sync.WaitGroup
 	var err error
-
-	sender := createRandomAccount(t)
-	receiver := createRandomAccount(t)
-
-	fmt.Println(">> before:", sender.Balance, receiver.Balance)
 
 	store, err := db.GetSQLStore(setup.GetStore())
 	require.NoError(t, err)
 	require.NotEmpty(t, store)
 
-	n := 5
-	// Create a pgtype.Numeric for the amount
+	sender := createRandomAccount(t)
+	receiver := createRandomAccount(t)
+	fmt.Println(">> before:", sender.Balance, receiver.Balance)
+
 	amount := pgtype.Numeric{}
 	err = amount.Set(10)
 	require.NoError(t, err)
 
-	errs := make(chan error)
-	results := make(chan schemas.TransferTxResult)
+	//? Create buffered channels
+	errs := make(chan error, n)
+	transfer_results := make(chan schemas.TransferTxResult, n)
 
+	//? Execute concurrent transfers
 	for i := 0; i < n; i++ {
+		wg.Add(1)
 		go func(senderID, receiverID int32, transferAmount pgtype.Numeric) {
-			result, err := transaction.TransferTx(context.Background(), schemas.TransferTxParams{
+			defer wg.Done()
+
+			transfer, err := transaction.TransferTx(context.Background(), schemas.TransferTxParams{
 				SenderAccountID:   senderID,
 				ReceiverAccountID: receiverID,
 				Amount:            transferAmount,
 			})
+
 			errs <- err
-			results <- result
+			transfer_results <- transfer
 		}(sender.AccountID, receiver.AccountID, amount)
 	}
 
-	// Check results
-	existed := make(map[int]bool)
 	for i := 0; i < n; i++ {
 		err := <-errs
 		require.NoError(t, err)
 
-		result := <-results
+		result := <-transfer_results
 		require.NotEmpty(t, result)
 
-		// Check transaction
+		// Verify transaction details
 		transfer := result.Transaction
 		require.NotEmpty(t, transfer)
-		require.Equal(t, sender.AccountID, transfer.FromAccountID)
-		require.Equal(t, receiver.AccountID, transfer.ToAccountID)
-		require.Equal(t, amount, transfer.Amount)
-		require.Equal(t, "COMPLETED", transfer.StatusCode)
+		require.Equal(t, sender.AccountID, transfer.FromAccountID.Int32)
+		require.Equal(t, receiver.AccountID, transfer.ToAccountID.Int32)
+		// Compare numeric values instead of direct pgtype.Numeric comparison
+		var expectedAmount, actualAmount float64
+		err = amount.AssignTo(&expectedAmount)
+		require.NoError(t, err)
+		err = transfer.Amount.AssignTo(&actualAmount)
+		require.NoError(t, err)
+		require.Equal(t, expectedAmount, actualAmount)
+		require.Equal(t, config.TransactionStatuses.COMPLETED, transfer.StatusCode)
 		require.NotZero(t, transfer.TransactionID)
 		require.NotZero(t, transfer.CreatedAt)
 
-		// Check entries
+		//? Verify entries
 		fromEntry := result.FromEntry
 		require.NotEmpty(t, fromEntry)
-		require.Equal(t, sender.AccountID, fromEntry.AccountID)
+		require.Equal(t, sender.AccountID, fromEntry.AccountID.Int32)
 
-		// Create negative amount for comparison
-		negativeAmount := pgtype.Numeric{}
-		err = negativeAmount.Set(-10)
+		//? Verify negative amount in from entry
+		var fromEntryAmount float64
+		err = fromEntry.Amount.AssignTo(&fromEntryAmount)
 		require.NoError(t, err)
-		require.Equal(t, negativeAmount, fromEntry.Amount)
+		require.Equal(t, -10.0, fromEntryAmount)
 
 		toEntry := result.ToEntry
 		require.NotEmpty(t, toEntry)
-		require.Equal(t, receiver.AccountID, toEntry.AccountID)
-		require.Equal(t, amount, toEntry.Amount)
+		require.Equal(t, receiver.AccountID, toEntry.AccountID.Int32)
 
-		// Check accounts
+		//? Compare the to entry amount
+		var toEntryAmount float64
+		err = toEntry.Amount.AssignTo(&toEntryAmount)
+		require.NoError(t, err)
+		require.Equal(t, float64(10), toEntryAmount)
+
+		// Verify accounts
 		fromAccount := result.FromAccount
 		require.NotEmpty(t, fromAccount)
 		require.Equal(t, sender.AccountID, fromAccount.AccountID)
@@ -90,7 +107,7 @@ func TestTransfer(t *testing.T) {
 		require.NotEmpty(t, toAccount)
 		require.Equal(t, receiver.AccountID, toAccount.AccountID)
 
-		// Get numeric values for calculations
+		//? Get numeric values for calculations
 		var senderVal, fromAccountVal, toAccountVal, receiverVal float64
 		err = sender.Balance.AssignTo(&senderVal)
 		require.NoError(t, err)
@@ -101,7 +118,7 @@ func TestTransfer(t *testing.T) {
 		err = receiver.Balance.AssignTo(&receiverVal)
 		require.NoError(t, err)
 
-		// Calculate differences
+		//? Calculate and verify differences
 		diff1 := pgtype.Numeric{}
 		diff2 := pgtype.Numeric{}
 
@@ -127,14 +144,16 @@ func TestTransfer(t *testing.T) {
 		existed[k] = true
 	}
 
-	// Check final balances
+	wg.Wait()
+
+	//? Verify final account balances
 	updatedSender, err := store.GetAccount(context.Background(), sender.AccountID)
 	require.NoError(t, err)
 
 	updatedReceiver, err := store.GetAccount(context.Background(), receiver.AccountID)
 	require.NoError(t, err)
 
-	// Calculate expected final balances
+	//? Calculate expected final balances
 	var senderVal, receiverVal, amountVal float64
 	err = sender.Balance.AssignTo(&senderVal)
 	require.NoError(t, err)
@@ -143,16 +162,21 @@ func TestTransfer(t *testing.T) {
 	err = amount.AssignTo(&amountVal)
 	require.NoError(t, err)
 
-	expectedSenderBalance := pgtype.Numeric{}
-	err = expectedSenderBalance.Set(senderVal - (float64(n) * amountVal))
+	//? Calculate expected final balances
+	expectedSenderVal := senderVal - (float64(n) * amountVal)
+	expectedReceiverVal := receiverVal + (float64(n) * amountVal)
+
+	//? Get actual final balances
+	var updatedSenderVal, updatedReceiverVal float64
+	err = updatedSender.Balance.AssignTo(&updatedSenderVal)
+	require.NoError(t, err)
+	err = updatedReceiver.Balance.AssignTo(&updatedReceiverVal)
 	require.NoError(t, err)
 
-	expectedReceiverBalance := pgtype.Numeric{}
-	err = expectedReceiverBalance.Set(receiverVal + (float64(n) * amountVal))
-	require.NoError(t, err)
-
-	require.Equal(t, expectedSenderBalance, updatedSender.Balance)
-	require.Equal(t, expectedReceiverBalance, updatedReceiver.Balance)
+	//? Compare the actual values
+	require.Equal(t, expectedSenderVal, updatedSenderVal)
+	require.Equal(t, expectedReceiverVal, updatedReceiverVal)
 
 	fmt.Println(">> after:", updatedSender.Balance, updatedReceiver.Balance)
+	defer CleanupDB(t)
 }

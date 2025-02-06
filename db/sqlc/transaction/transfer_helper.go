@@ -35,14 +35,23 @@ func createTransferEntries(ctx context.Context, q *db.Queries, arg schemas.Trans
 }
 
 func createTransferTransaction(ctx context.Context, q *db.Queries, arg schemas.TransferTxParams) (db.Transaction, error) {
+	transactionType, _ := CreateTransactionType(config.TransactionTypes.TRANSFER)
+	currency, _ := CreateCurrencyCode(config.TransactionCurrencies.USD.CODE)
+	transaction_status, _ := CreateTransactionStatus(config.TransactionStatuses.PENDING)
+
+	exchangeRate, err := common.RandomNumeric()
+	if err != nil {
+		return db.Transaction{}, fmt.Errorf("error creating exchange rate: %v", err)
+	}
+
 	transaction, err := q.CreateTransaction(ctx, db.CreateTransactionParams{
 		FromAccountID:   sql.NullInt32{Int32: arg.SenderAccountID, Valid: true},
 		ToAccountID:     sql.NullInt32{Int32: arg.ReceiverAccountID, Valid: true},
-		TypeCode:        config.TransactionTypes.TRANSFER,
+		TypeCode:        transactionType.TypeCode,
 		Amount:          arg.Amount,
-		CurrencyCode:    arg.CurrencyCode,
-		ExchangeRate:    arg.ExchangeRate,
-		StatusCode:      config.TransactionStatuses.PENDING,
+		CurrencyCode:    currency.CurrencyCode,
+		ExchangeRate:    exchangeRate,
+		StatusCode:      transaction_status.StatusCode,
 		Description:     sql.NullString{String: "Fund Transfer", Valid: true},
 		ReferenceNumber: sql.NullString{String: common.RandomString(10), Valid: true},
 		TransactionDate: time.Now(),
