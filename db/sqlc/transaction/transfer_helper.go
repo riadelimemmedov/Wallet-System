@@ -4,12 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/jackc/pgtype"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
 	"github.com/riad/banksystemendtoend/util/common"
-	"github.com/riad/banksystemendtoend/util/config"
 	"github.com/riad/banksystemendtoend/util/schemas"
 )
 
@@ -35,24 +35,15 @@ func createTransferEntries(ctx context.Context, q *db.Queries, arg schemas.Trans
 }
 
 func createTransferTransaction(ctx context.Context, q *db.Queries, arg schemas.TransferTxParams) (db.Transaction, error) {
-	transactionType, _ := CreateTransactionType(config.TransactionTypes.TRANSFER)
-	currency, _ := CreateCurrencyCode(config.TransactionCurrencies.USD.CODE)
-	transaction_status, _ := CreateTransactionStatus(config.TransactionStatuses.PENDING)
-
-	exchangeRate, err := common.RandomNumeric()
-	if err != nil {
-		return db.Transaction{}, fmt.Errorf("error creating exchange rate: %v", err)
-	}
-
 	transaction, err := q.CreateTransaction(ctx, db.CreateTransactionParams{
 		FromAccountID:   sql.NullInt32{Int32: arg.SenderAccountID, Valid: true},
 		ToAccountID:     sql.NullInt32{Int32: arg.ReceiverAccountID, Valid: true},
-		TypeCode:        transactionType.TypeCode,
+		TypeCode:        arg.TypeCode,
 		Amount:          arg.Amount,
-		CurrencyCode:    currency.CurrencyCode,
-		ExchangeRate:    exchangeRate,
-		StatusCode:      transaction_status.StatusCode,
-		Description:     sql.NullString{String: "Fund Transfer", Valid: true},
+		CurrencyCode:    arg.CurrencyCode,
+		ExchangeRate:    pgtype.Numeric{Int: big.NewInt(1), Status: pgtype.Present},
+		StatusCode:      arg.StatusCode,
+		Description:     sql.NullString{String: arg.Description, Valid: true},
 		ReferenceNumber: sql.NullString{String: common.RandomString(10), Valid: true},
 		TransactionDate: time.Now(),
 	})

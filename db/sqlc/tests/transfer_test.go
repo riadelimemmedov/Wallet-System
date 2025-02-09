@@ -29,6 +29,15 @@ func TestTransfer(t *testing.T) {
 	receiver := createRandomAccount(t)
 	fmt.Println(">> before:", sender.Balance, receiver.Balance)
 
+	completedStatus, err := transaction.CreateTransactionStatus(config.TransactionStatuses.COMPLETED)
+	require.NoError(t, err)
+
+	transferType, err := transaction.CreateTransactionType(config.TransactionTypes.TRANSFER)
+	require.NoError(t, err)
+
+	currency, err := transaction.CreateCurrencyCode(config.TransactionCurrencies.USD.CODE)
+	require.NoError(t, err)
+
 	amount := pgtype.Numeric{}
 	err = amount.Set(10)
 	require.NoError(t, err)
@@ -47,6 +56,9 @@ func TestTransfer(t *testing.T) {
 				SenderAccountID:   senderID,
 				ReceiverAccountID: receiverID,
 				Amount:            transferAmount,
+				CurrencyCode:      currency.CurrencyCode,
+				TypeCode:          transferType.TypeCode,
+				StatusCode:        completedStatus.StatusCode,
 			})
 
 			errs <- err

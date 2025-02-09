@@ -9,5 +9,9 @@ type TransferTxParams struct {
 	ReceiverAccountID int32
 	Amount            pgtype.Numeric
 	CurrencyCode      string
+	TypeCode          string
+	StatusCode        string
+	Description       string
 	ExchangeRate      pgtype.Numeric
+	ReferenceNumber   string
 }
