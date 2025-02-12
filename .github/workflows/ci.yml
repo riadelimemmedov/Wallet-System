@@ -1,12 +1,19 @@
 # .github/workflows/go-test.yml
 name: Go Test Pipeline
 
+# Only manual trigger
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select environment to run tests"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - staging
+          - production
 
 jobs:
   run-tests:
@@ -55,7 +62,7 @@ jobs:
           which migrate
 
       - name: Run database migrations
-        run: make migrateup
+        run: make migrate-dev-up
 
       - name: Clean test cache
         run: make clean-test-cache
