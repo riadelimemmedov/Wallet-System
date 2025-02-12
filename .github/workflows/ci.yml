@@ -6,6 +6,7 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   run-tests:
@@ -16,9 +17,9 @@ jobs:
       test-db:
         image: postgres:12-alpine
         env:
-          POSTGRES_USER: ${{ secrets.TEST_DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.TEST_DB_NAME }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 123321
+          POSTGRES_DB: simple_bank
         ports:
           - 6432:5432
         options: >-
@@ -36,6 +37,17 @@ jobs:
         with:
           go-version: "1.21.5"
 
+      - name: Create test env file
+        run: |
+          cat << EOF > .env.test
+          TEST_DB_HOST=localhost
+          TEST_DB_PORT=6432
+          TEST_DB_USER=postgres
+          TEST_DB_PASSWORD=123321
+          TEST_DB_NAME=simple_bank
+          TEST_DB_SSLMODE=disable
+          EOF
+
       - name: Install database migration tool
         run: |
           curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz
@@ -43,20 +55,10 @@ jobs:
           which migrate
 
       - name: Run database migrations
-        run: |
-          migrate -path db/migration -database \
-          "postgresql://${{ secrets.TEST_DB_USER }}:${{ secrets.TEST_DB_PASSWORD }}@${{ secrets.TEST_DB_HOST }}:${{ secrets.TEST_DB_PORT }}/${{ secrets.TEST_DB_NAME }}?sslmode=${{ secrets.TEST_DB_SSLMODE }}" \
-          -verbose up
+        run: make migrateup
 
       - name: Clean test cache
         run: make clean-test-cache
 
       - name: Run tests
-        env:
-          TEST_DB_HOST: ${{ secrets.TEST_DB_HOST }}
-          TEST_DB_PORT: ${{ secrets.TEST_DB_PORT }}
-          TEST_DB_USER: ${{ secrets.TEST_DB_USER }}
-          TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
-          TEST_DB_NAME: ${{ secrets.TEST_DB_NAME }}
-          TEST_DB_SSLMODE: ${{ secrets.TEST_DB_SSLMODE }}
         run: make test
