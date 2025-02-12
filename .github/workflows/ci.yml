@@ -51,7 +51,7 @@ jobs:
           TEST_DB_PORT=6432
           TEST_DB_USER=postgres
           TEST_DB_PASSWORD=123321
-          TEST_DB_NAME=simple_bank
+          TEST_DB_NAME=simple_bank_dev
           TEST_DB_SSLMODE=disable
           EOF
 
