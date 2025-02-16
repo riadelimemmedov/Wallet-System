@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	db "github.com/riad/banksystemendtoend/db/sqlc"
 	"github.com/riad/banksystemendtoend/util/config"
 	setup "github.com/riad/banksystemendtoend/util/db"
 )
@@ -18,6 +19,11 @@ func run() error {
 		return err
 	}
 	log.Println("✅ Database connection established")
+
+	_, err := db.GetSQLStore(setup.GetStore())
+	if err != nil {
+		return err
+	}
 
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
