@@ -2,10 +2,12 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/riad/banksystemendtoend/api/utils"
 )
 
 // APIKey struct holds the actual API key.
@@ -15,11 +17,15 @@ type APIKey struct {
 
 // NewAPIKey creates a new instance of APIKey by reading the API key from the environment variable.
 func NewAPIKey() (*APIKey, error) {
-	apiKey := os.Getenv("API_KEY")
+	if err := utils.LoadEnvFile(); err != nil {
+		log.Printf("Warning: %v", err)
+	}
 
+	apiKey := os.Getenv("API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("API_KEY environment variable is not set")
 	}
+
 	return &APIKey{apiKey: apiKey}, nil
 }
 
@@ -27,7 +33,6 @@ func NewAPIKey() (*APIKey, error) {
 func (apk *APIKey) ValidateAPIKey() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("X-API-Key")
-
 		if apiKey == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": "API key is missing",

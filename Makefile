@@ -124,3 +124,9 @@ test:
 
 clean-test-cache:
 	go clean -testcache
+
+
+#! Api
+.PHONY: run-api
+run-api:
+	air

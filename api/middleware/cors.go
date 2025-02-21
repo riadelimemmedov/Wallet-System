@@ -1,6 +1,8 @@
 package middleware
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 // CORS provides Cross-Origin Resource Sharing middleware for Gin
 func Cors() gin.HandlerFunc {
