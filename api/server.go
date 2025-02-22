@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +37,7 @@ func (s *Server) setupRouter() {
 	apiKey, err := middleware.NewAPIKey()
 
 	if err != nil {
-		log.Fatal("Failed to create API key", zap.Error(err))
+		zap.L().Fatal("Failed to create API key", zap.Error(err))
 	}
 
 	router.Use(middleware.Cors())
@@ -52,6 +51,12 @@ func (s *Server) setupRouter() {
 		accounts := v1.Group("/accounts")
 		{
 			accounts.GET("", s.listAccounts)
+		}
+
+		// Account Type Routes
+		accountTypes := v1.Group("/account-types")
+		{
+			accountTypes.POST("", s.createAccountType)
 		}
 	}
 	s.router = router

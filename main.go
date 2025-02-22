@@ -55,6 +55,11 @@ func run() error {
 	app.logger.ZapLogger.Info("✅ Database connection established")
 
 	go func() {
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+
 		if err := app.server.Start(":8080"); err != nil {
 			app.logger.ZapLogger.Error("Failed to start server", zap.Error(err))
 		}

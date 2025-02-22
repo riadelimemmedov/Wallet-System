@@ -1,0 +1,20 @@
+# Version control
+.git
+.gitignore
+
+# Environment files
+
+# Documentation
+*.md
+LICENSE
+
+# Development artifacts
+tmp/
+*.log
+.air.toml
+
+# Build artifacts
+bin/
+
+# Do NOT ignore the Docker/scripts directory
+!Docker/scripts/
