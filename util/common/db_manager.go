@@ -17,7 +17,7 @@ func SetupDBPool(ctx context.Context, envPrefix string) (*pgxpool.Pool, error) {
 		os.Getenv(envPrefix+"_DB_USER"),
 		os.Getenv(envPrefix+"_DB_PASSWORD"),
 		os.Getenv(envPrefix+"_DB_HOST"),
-		os.Getenv(envPrefix+"_DB_PORT"),
+		os.Getenv(envPrefix+"_DB_CONTAINER_PORT"),
 		os.Getenv(envPrefix+"_DB_NAME"),
 		os.Getenv(envPrefix+"_DB_SSLMODE"),
 	)

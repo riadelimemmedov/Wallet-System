@@ -47,6 +47,24 @@ func (q *Queries) DeleteAccountType(ctx context.Context, accountType string) err
 	return err
 }
 
+const getAccountType = `-- name: GetAccountType :one
+SELECT account_type, description, is_active, created_at, updated_at FROM account_types 
+WHERE account_type = $1 AND is_active = true
+`
+
+func (q *Queries) GetAccountType(ctx context.Context, accountType string) (AccountType, error) {
+	row := q.db.QueryRow(ctx, getAccountType, accountType)
+	var i AccountType
+	err := row.Scan(
+		&i.AccountType,
+		&i.Description,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const hardDeleteAccountType = `-- name: HardDeleteAccountType :exec
 DELETE FROM account_types
 WHERE account_type = $1
@@ -89,19 +107,30 @@ func (q *Queries) ListAccountTypes(ctx context.Context) ([]AccountType, error) {
 }
 
 const updateAccountType = `-- name: UpdateAccountType :one
-UPDATE account_types 
-SET account_type = $1
-WHERE account_type = $2
+UPDATE account_types
+SET 
+    account_type = COALESCE($1, account_type),
+    description = COALESCE($2, description),
+    is_active = COALESCE($3, is_active),
+    updated_at = CURRENT_TIMESTAMP
+WHERE account_type = $4
 RETURNING account_type, description, is_active, created_at, updated_at
 `
 
 type UpdateAccountTypeParams struct {
 	AccountType   string `json:"account_type"`
+	Description   string `json:"description"`
+	IsActive      bool   `json:"is_active"`
 	AccountType_2 string `json:"account_type_2"`
 }
 
 func (q *Queries) UpdateAccountType(ctx context.Context, arg UpdateAccountTypeParams) (AccountType, error) {
-	row := q.db.QueryRow(ctx, updateAccountType, arg.AccountType, arg.AccountType_2)
+	row := q.db.QueryRow(ctx, updateAccountType,
+		arg.AccountType,
+		arg.Description,
+		arg.IsActive,
+		arg.AccountType_2,
+	)
 	var i AccountType
 	err := row.Scan(
 		&i.AccountType,

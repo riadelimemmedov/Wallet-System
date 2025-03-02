@@ -34,6 +34,7 @@ type Querier interface {
 	GetAccountBalance(ctx context.Context, accountID sql.NullInt32) (interface{}, error)
 	GetAccountForUpdate(ctx context.Context, accountID int32) (Account, error)
 	GetAccountStatement(ctx context.Context, arg GetAccountStatementParams) ([]GetAccountStatementRow, error)
+	GetAccountType(ctx context.Context, accountType string) (AccountType, error)
 	GetActiveTransactionStatus(ctx context.Context, dollar_1 []string) ([]TransactionStatus, error)
 	GetCurrency(ctx context.Context, currencyCode string) (AccountCurrency, error)
 	GetEntry(ctx context.Context, id int64) (Entry, error)
