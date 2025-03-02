@@ -10,10 +10,18 @@ INSERT INTO account_types (
   $1, $2
 ) RETURNING *;
 
+-- name: GetAccountType :one
+SELECT * FROM account_types 
+WHERE account_type = $1 AND is_active = true;
+
 -- name: UpdateAccountType :one
-UPDATE account_types 
-SET account_type = $1
-WHERE account_type = $2
+UPDATE account_types
+SET 
+    account_type = COALESCE($1, account_type),
+    description = COALESCE($2, description),
+    is_active = COALESCE($3, is_active),
+    updated_at = CURRENT_TIMESTAMP
+WHERE account_type = $4
 RETURNING *;
 
 -- name: DeleteAccountType :exec
