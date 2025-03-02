@@ -32,6 +32,13 @@ func NewAPIKey() (*APIKey, error) {
 // ValidateAPIKey is a middleware function that checks if the provided API key in the request
 func (apk *APIKey) ValidateAPIKey() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Skip API key validation for health check endpoint
+		if c.Request.URL.Path == "/health" {
+			c.Next()
+			return
+		}
+
+		// Proceed with standard API key validation
 		apiKey := c.GetHeader("X-API-Key")
 		if apiKey == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
