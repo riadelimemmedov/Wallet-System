@@ -60,7 +60,7 @@ func run() error {
 			port = "8080"
 		}
 
-		if err := app.server.Start(":8080"); err != nil {
+		if err := app.server.Start(fmt.Sprintf(":%s", port)); err != nil {
 			app.logger.ZapLogger.Error("Failed to start server", zap.Error(err))
 		}
 	}()

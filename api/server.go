@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,11 @@ func (s *Server) setupRouter() {
 			accountTypes.POST("", s.createAccountType)
 		}
 	}
+
+	//Health check endpoint
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "up"})
+	})
 	s.router = router
 }
 
