@@ -1,7 +1,7 @@
 root = "."
+
 [build]
-# cmd = "go run main.go"
-cmd = "go build -o ./tmp/main.exe ."
+cmd = "go build -o ./tmp/main ."
 include_ext = ["go"]
 exclude_dir = ["tmp"]
 follow_symlink = false
