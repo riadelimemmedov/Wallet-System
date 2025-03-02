@@ -165,23 +165,23 @@ run-api:
 #? Build development containers
 docker-dev-build:
 	docker-compose -f docker/development/docker-compose.yml \
-		--env-file docker/development/.env.dev build
+		--env-file docker/development/.env build
 
 #? Start development environment
 docker-dev-up:
 	docker-compose -f docker/development/docker-compose.yml \
-		--env-file docker/development/.env.dev \
+		--env-file docker/development/.env \
 		up -d
 
 #? Stop development environment and remove volumes
 docker-dev-down:
 	docker-compose -f docker/development/docker-compose.yml \
-		--env-file docker/development/.env.dev down -v
+		--env-file docker/development/.env down -v
 
 #? View development logs
 docker-dev-logs:
 	docker-compose -f docker/development/docker-compose.yml \
-		--env-file docker/development/.env.dev up \
+		--env-file docker/development/.env up \
 		logs -f
 
 #! Docker Test Commands
@@ -264,3 +264,6 @@ docker-logs:
 		exit 1; \
 	fi
 	docker logs -f $(CONTAINER)
+
+
+# docker exec simple_bank_dev_api migrate -path db/migration/ -database "postgresql://postgres:123321@postgres:5433/simple_bank_dev?sslmode=disable" --verbose up
