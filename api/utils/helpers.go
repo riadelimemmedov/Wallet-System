@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/riad/banksystemendtoend/util/config"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -43,4 +44,14 @@ func IsForeignKeyError(err error) bool {
 // IsUniqueViolationError checks if an error is a unique violation error
 func IsUniqueViolationError(err error) bool {
 	return strings.Contains(err.Error(), "SQLSTATE 23505")
+}
+
+// GetValidAccountTypesMessage returns a message with valid account types
+func GetValidAccountTypesMessage() string {
+	types := []string{}
+
+	for _, v := range config.AccountTypesMap {
+		types = append(types, v)
+	}
+	return fmt.Sprintf("invalid account type: must be one of %s", strings.Join(types, ", "))
 }

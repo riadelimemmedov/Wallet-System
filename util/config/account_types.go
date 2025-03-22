@@ -15,3 +15,10 @@ var AccountTypes = AccountType{
 	FIXED_DEPOSIT: "FIXED_DEPOSIT",
 	MONEY_MARKET:  "MONEY_MARKET",
 }
+
+var AccountTypesMap = map[string]string{
+	AccountTypes.SAVINGS:       AccountTypes.SAVINGS,
+	AccountTypes.CHECKING:      AccountTypes.CHECKING,
+	AccountTypes.FIXED_DEPOSIT: AccountTypes.FIXED_DEPOSIT,
+	AccountTypes.MONEY_MARKET:  AccountTypes.MONEY_MARKET,
+}
