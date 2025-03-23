@@ -21,7 +21,7 @@ SET
     description = COALESCE($2, description),
     is_active = COALESCE($3, is_active),
     updated_at = CURRENT_TIMESTAMP
-WHERE account_type = $4
+WHERE account_type = $1
 RETURNING *;
 
 -- name: DeleteAccountType :exec

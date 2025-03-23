@@ -32,8 +32,15 @@ func CheckPassword(password, hashedPassword string) error {
 }
 
 // IsDuplicateError checks if an error is a duplicate error
-func IsDuplicateError(err error) bool {
-	return strings.Contains(err.Error(), "SQLSTATE 23505")
+func IsDuplicateError(err error, data string, instanceType ...string) (bool, error) {
+	isDuplicate := strings.Contains(err.Error(), "SQLSTATE 23505")
+	if !isDuplicate {
+		return false, nil
+	}
+	if len(instanceType) == 0 || instanceType[0] == "" {
+		return true, fmt.Errorf("record already exists %s", data)
+	}
+	return true, fmt.Errorf("%s already exists - %s", instanceType[0], data)
 }
 
 // IsForeignKeyError checks if an error is a foreign key error

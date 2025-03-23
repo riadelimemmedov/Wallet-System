@@ -48,3 +48,9 @@ type AccountTypeResponse struct {
 	IsActive    bool      `json:"is_active"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+
+type UpdateAccountTypeParams struct {
+	AccountType string `json:"account_type"`
+	Description string `json:"description"`
+	IsActive    bool   `json:"is_active"`
+}

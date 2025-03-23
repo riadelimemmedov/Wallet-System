@@ -1,7 +1,8 @@
-package api
+package common
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,4 +32,12 @@ func HandleCreateUserAccountError(c *gin.Context, err error) {
 // ErrorResponse returns a JSON response for an error
 func ErrorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+func RequiredFieldError(fieldName string) error {
+	return fmt.Errorf("required field '%s' is missing", fieldName)
+}
+
+func InstanceNotFoundError(instance string) error {
+	return fmt.Errorf("%s not found", instance)
 }

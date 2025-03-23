@@ -222,16 +222,18 @@ docker-test-run:
 
 DEV_DB_USER :=postgres
 DEV_DB_NAME :=simple_bank_dev
+DEV_DB_CONTAINER_PORT := 5433
 TEST_DB_USER :=postgres
 TEST_DB_NAME :=simple_bank_test
+TEST_DB_CONTAINER_PORT := 5434
 
 #? Connect to development database
 docker-db-dev:
-	docker exec -it simple_bank_dev_db psql -U ${DEV_DB_USER} -d ${DEV_DB_NAME}
+	docker exec -it simple_bank_dev_db psql -U ${DEV_DB_USER} -d ${DEV_DB_NAME} -p ${DEV_DB_CONTAINER_PORT}
 
 #? Connect to test database
 docker-db-test:
-	docker exec -it simple_bank_test_db psql -U ${TEST_DB_USER} -d ${TEST_DB_NAME}
+	docker exec -it simple_bank_test_db psql -U ${TEST_DB_USER} -d ${TEST_DB_NAME} -p ${TEST_DB_CONTAINER_PORT}
 
 #! Docker Clean Commands
 .PHONY: docker-clean docker-clean-all docker-prune

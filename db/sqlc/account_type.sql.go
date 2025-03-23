@@ -113,24 +113,18 @@ SET
     description = COALESCE($2, description),
     is_active = COALESCE($3, is_active),
     updated_at = CURRENT_TIMESTAMP
-WHERE account_type = $4
+WHERE account_type = $1
 RETURNING account_type, description, is_active, created_at, updated_at
 `
 
 type UpdateAccountTypeParams struct {
-	AccountType   string `json:"account_type"`
-	Description   string `json:"description"`
-	IsActive      bool   `json:"is_active"`
-	AccountType_2 string `json:"account_type_2"`
+	AccountType string `json:"account_type"`
+	Description string `json:"description"`
+	IsActive    bool   `json:"is_active"`
 }
 
 func (q *Queries) UpdateAccountType(ctx context.Context, arg UpdateAccountTypeParams) (AccountType, error) {
-	row := q.db.QueryRow(ctx, updateAccountType,
-		arg.AccountType,
-		arg.Description,
-		arg.IsActive,
-		arg.AccountType_2,
-	)
+	row := q.db.QueryRow(ctx, updateAccountType, arg.AccountType, arg.Description, arg.IsActive)
 	var i AccountType
 	err := row.Scan(
 		&i.AccountType,

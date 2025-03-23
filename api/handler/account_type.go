@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/riad/banksystemendtoend/api"
+	"github.com/riad/banksystemendtoend/api/common"
 	"github.com/riad/banksystemendtoend/api/dto"
 	handler_interface "github.com/riad/banksystemendtoend/api/interface/handler"
 	interface_service "github.com/riad/banksystemendtoend/api/interface/service"
@@ -27,24 +27,25 @@ func (h *accountTypeHandler) CreateAccountType(ctx *gin.Context) {
 	var req dto.CreateAccountTypeRequest
 	var err error
 	if err = ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, api.ErrorResponse(err))
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return
 	}
 
 	inputAccountType := strings.ToUpper(req.AccountType)
 	if !config.IsValidAccountType(inputAccountType) {
 		err = fmt.Errorf(utils.GetValidAccountTypesMessage())
-		ctx.JSON(http.StatusBadRequest, api.ErrorResponse(err))
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(err))
 		return
 	}
 
 	createdAccountType, err := h.service.CreateAccountType(ctx, inputAccountType, req.Description)
 	if err != nil {
-		if utils.IsDuplicateError(err) {
-			ctx.JSON(http.StatusConflict, api.ErrorResponse(err))
+		isDuplicate, message := utils.IsDuplicateError(err, inputAccountType, "ACCOUNT_TYPE")
+		if isDuplicate {
+			ctx.JSON(http.StatusConflict, common.ErrorResponse(message))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(err))
 		return
 	}
 
@@ -58,19 +59,19 @@ func (h *accountTypeHandler) CreateAccountType(ctx *gin.Context) {
 }
 
 func (h *accountTypeHandler) GetAccountType(ctx *gin.Context) {
-	accountType := ctx.Param("accountType")
+	accountType := ctx.Param("account_type")
 	if accountType == "" {
-		ctx.JSON(http.StatusBadRequest, api.ErrorResponse(fmt.Errorf("account type is required")))
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(common.RequiredFieldError("account_type")))
 		return
 	}
 
 	accountTypeData, err := h.service.GetAccountType(ctx, accountType)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, api.ErrorResponse(fmt.Errorf("account type not found")))
+			ctx.JSON(http.StatusNotFound, common.ErrorResponse(common.InstanceNotFoundError("Account type")))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(err))
 		return
 	}
 	rsp := dto.AccountResponse{
@@ -84,7 +85,7 @@ func (h *accountTypeHandler) GetAccountType(ctx *gin.Context) {
 func (h *accountTypeHandler) ListAccountTypes(ctx *gin.Context) {
 	accountTypes, err := h.service.ListAccountTypes(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(err))
 		return
 	}
 
@@ -100,25 +101,52 @@ func (h *accountTypeHandler) ListAccountTypes(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": rsp})
 }
 
-// ! Implement later
 func (h *accountTypeHandler) UpdateAccountType(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"message": "UpdateAccountType"})
+	accountType := ctx.Param("account_type")
+	if accountType == "" {
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(common.RequiredFieldError("account_type")))
+		return
+	}
+
+	var req dto.UpdateAccountTypeParams
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(err))
+		return
+	}
+
+	updatedAccountType, err := h.service.UpdateAccountType(ctx, accountType, req.Description, req.IsActive)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, common.ErrorResponse(common.InstanceNotFoundError("Account type")))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(err))
+		return
+	}
+
+	rsp := dto.AccountTypeResponse{
+		AccountType: updatedAccountType.AccountType,
+		Description: updatedAccountType.Description,
+		IsActive:    updatedAccountType.IsActive,
+		CreatedAt:   updatedAccountType.CreatedAt,
+	}
+	ctx.JSON(http.StatusOK, rsp)
 }
 
 func (h *accountTypeHandler) DeleteAccountType(ctx *gin.Context) {
-	accountType := ctx.Param("accountType")
+	accountType := ctx.Param("account_type")
 	if accountType == "" {
-		ctx.JSON(http.StatusBadRequest, api.ErrorResponse(fmt.Errorf("account type is required")))
+		ctx.JSON(http.StatusBadRequest, common.ErrorResponse(common.RequiredFieldError("account_type")))
 		return
 	}
 
 	err := h.service.DeleteAccountType(ctx, accountType)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, api.ErrorResponse(fmt.Errorf("account type not found")))
+			ctx.JSON(http.StatusNotFound, common.ErrorResponse(common.InstanceNotFoundError("Account type")))
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, api.ErrorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, common.ErrorResponse(err))
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/riad/banksystemendtoend/api/dependency"
 	"github.com/riad/banksystemendtoend/api/middleware"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
 	setup "github.com/riad/banksystemendtoend/util/db"
@@ -12,8 +13,9 @@ import (
 )
 
 type Server struct {
-	router *gin.Engine
-	store  db.Store
+	router       *gin.Engine
+	store        db.Store
+	dependencies *dependency.DependencyContainer
 }
 
 // NewServer creates and configures a new server instance
@@ -23,8 +25,11 @@ func NewServer() (*Server, error) {
 		return nil, err
 	}
 
+	dependencies := dependency.NewDependencyContainer(store)
+
 	server := &Server{
-		store: store,
+		store:        store,
+		dependencies: dependencies,
 	}
 
 	server.setupRouter()
@@ -54,10 +59,10 @@ func (s *Server) setupRouter() {
 			accounts.GET("", s.listAccounts)
 		}
 
-		// Account Type Routes
+		// Account Type Routes - dynamically register from dependency container
 		accountTypes := v1.Group("/account-types")
-		{
-			accountTypes.POST("", s.createAccountType)
+		for _, route := range s.dependencies.GetRouteHandlers("account-types") {
+			accountTypes.Handle(route.Method, route.Path, route.HandlerFunc)
 		}
 	}
 
