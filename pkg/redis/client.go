@@ -86,7 +86,7 @@ func (c *Client) DeleteByPattern(ctx context.Context, pattern string) error {
 	return nil
 }
 
-// Exists checks if a key existsz`	`
+// Exists checks if a key exists
 func (c *Client) Exists(ctx context.Context, key string) (bool, error) {
 	n, err := c.client.Exists(ctx, key).Result()
 	return n > 0, err
