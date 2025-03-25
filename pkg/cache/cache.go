@@ -16,7 +16,7 @@ var (
 )
 
 // DefaultExpiration is the default expiration time for cache entries
-const DefaultExpiration = 30 * time.Minute
+const DefaultExpiration = 60 * time.Minute
 
 // Service provides caching functionality using Redis
 type Service struct {
@@ -99,4 +99,14 @@ func (s *Service) DeleteByPattern(ctx context.Context, pattern string) error {
 func (s *Service) Exists(ctx context.Context, key string) (bool, error) {
 	prefixedKey := s.buildKey(key)
 	return s.redisClient.Exists(ctx, prefixedKey)
+}
+
+// GetRedisClient returns the underlying Redis client
+func (s *Service) GetRedisClient() *redis.Client {
+	return s.redisClient
+}
+
+// GetDefaultTTL returns the default TTL for cache entries
+func (s *Service) GetDefaultTTL() time.Duration {
+	return s.defaultTTL
 }
