@@ -2,6 +2,7 @@ package dependency
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/riad/banksystemendtoend/api/handler"
@@ -9,10 +10,14 @@ import (
 	"github.com/riad/banksystemendtoend/api/repository"
 	"github.com/riad/banksystemendtoend/api/service"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
+	"github.com/riad/banksystemendtoend/pkg/cache"
+	"github.com/riad/banksystemendtoend/pkg/redis"
 )
 
 type DependencyContainer struct {
-	handlers map[string][]RouteHandler
+	handlers     map[string][]RouteHandler
+	redisClient  *redis.Client
+	cacheService *cache.Service
 
 	AccountTypeHandler handler_interface.AccountTypeHandler
 }
@@ -23,17 +28,27 @@ type RouteHandler struct {
 	HandlerFunc gin.HandlerFunc
 }
 
-func NewDependencyContainer(store db.Store) *DependencyContainer {
-	container := &DependencyContainer{
-		handlers: make(map[string][]RouteHandler),
+func NewDependencyContainer(store db.Store, redisConfig redis.Config) (*DependencyContainer, error) {
+	// Initialize Redis client
+	redisClient, err := redis.NewClient(redisConfig)
+	if err != nil {
+		return nil, err
 	}
 
-	container.registerAccountTypeHandlers(store)
-	return container
+	cacheService := cache.NewService(redisClient, "wallet_app", 60*time.Minute)
+
+	container := &DependencyContainer{
+		handlers:     make(map[string][]RouteHandler),
+		redisClient:  redisClient,
+		cacheService: cacheService,
+	}
+
+	container.registerAccountTypeHandlers(store, cacheService)
+	return container, nil
 }
 
-func (c *DependencyContainer) registerAccountTypeHandlers(store db.Store) {
-	accountTypeRepo := repository.NewAccountTypeRepository(store)
+func (c *DependencyContainer) registerAccountTypeHandlers(store db.Store, cacheService *cache.Service) {
+	accountTypeRepo := repository.NewAccountTypeRepository(store, cacheService)
 	accountTypeService := service.NewAccountTypeService(accountTypeRepo)
 	accountTypeHandler := handler.NewAccountTypeHandler(accountTypeService)
 
@@ -75,4 +90,15 @@ func (c *DependencyContainer) registerAccountTypeHandlers(store db.Store) {
 
 func (c *DependencyContainer) GetRouteHandlers(groupPrefix string) []RouteHandler {
 	return c.handlers[groupPrefix]
+}
+
+func (c *DependencyContainer) GetCacheService() *cache.Service {
+	return c.cacheService
+}
+
+func (c *DependencyContainer) Close() error {
+	if c.redisClient != nil {
+		return c.redisClient.Close()
+	}
+	return nil
 }
