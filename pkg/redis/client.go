@@ -9,6 +9,10 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	log = zap.L()
+)
+
 // Client wraps redis client with additional functionality
 type Client struct {
 	client *redis.Client
@@ -52,7 +56,7 @@ func NewClient(config Config) (*Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		zap.L().Fatal("Failed to connect to Redis", zap.Error(err))
+		log.Fatal("Failed to connect to Redis", zap.Error(err))
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 	return &Client{client: rdb}, nil
@@ -77,7 +81,7 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 func (c *Client) DeleteByPattern(ctx context.Context, pattern string) error {
 	keys, err := c.client.Keys(ctx, pattern).Result()
 	if err != nil {
-		zap.L().Error("Failed to get keys", zap.Error(err))
+		log.Error("Failed to get keys", zap.Error(err))
 		return fmt.Errorf("failed to get keys when delete by pattern: %w", err)
 	}
 	if len(keys) > 0 {
@@ -100,4 +104,46 @@ func (c *Client) Close() error {
 // GetClient returns the underlying Redis client
 func (c *Client) GetClient() *redis.Client {
 	return c.client
+}
+
+// FlushDB remove all keys from the current database
+func (c *Client) FlushDB(ctx context.Context) error {
+	return c.client.FlushDB(ctx).Err()
+}
+
+// Info returns information and statistics about the server
+func (c *Client) Info(ctx context.Context) (string, error) {
+	return c.client.Info(ctx).Result()
+}
+
+// GetConnectionStats returns connection pool statistics
+func (c *Client) GetConnectionStats(ctx context.Context) *redis.PoolStats {
+	return c.client.PoolStats()
+}
+
+// CheckRedisConnection checks if the Redis connection is working
+func (c *Client) CheckRedisConnection() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if err := c.client.Ping(ctx).Err(); err != nil {
+		log.Error("Failed to connect to Redis", zap.Error(err))
+		return fmt.Errorf("failed to connect to Redis %w", err)
+	}
+	return nil
+}
+
+// UpdateClient modifies the Redis client configuration
+func (c *Client) UpdateClient(ctx context.Context, redisConfig Config) error {
+	if err := c.Close(); err != nil {
+		log.Error("Failed to close Redis client", zap.Error(err))
+		return fmt.Errorf("error closing existing Redis client: %w", err)
+	}
+	newClient, err := NewClient(redisConfig)
+	if err != nil {
+		log.Error("Failed to update Redis client", zap.Error(err))
+		return fmt.Errorf("error updatingh new Redis client %w", err)
+	}
+	*c = *newClient
+	return nil
 }

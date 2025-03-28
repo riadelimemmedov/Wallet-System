@@ -13,7 +13,8 @@ func NewAppEnvironmentConfig(environment string) (config.AppConfig, error) {
 			ConfigFilePath: "../../../.env.test",
 		},
 		"dev": {
-			ConfigFilePath: "./docker/development/.env",
+			// ConfigFilePath: "./docker/development/.env",
+			ConfigFilePath: "../../../.env.dev",
 		},
 	}
 	appConfig, exists := appConfigMap[environment]

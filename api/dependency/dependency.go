@@ -28,13 +28,7 @@ type RouteHandler struct {
 	HandlerFunc gin.HandlerFunc
 }
 
-func NewDependencyContainer(store db.Store, redisConfig redis.Config) (*DependencyContainer, error) {
-	// Initialize Redis client
-	redisClient, err := redis.NewClient(redisConfig)
-	if err != nil {
-		return nil, err
-	}
-
+func NewDependencyContainer(store db.Store, redisClient *redis.Client) (*DependencyContainer, error) {
 	cacheService := cache.NewService(redisClient, "wallet_app", 60*time.Minute)
 
 	container := &DependencyContainer{

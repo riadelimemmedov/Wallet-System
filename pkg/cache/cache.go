@@ -110,3 +110,8 @@ func (s *Service) GetRedisClient() *redis.Client {
 func (s *Service) GetDefaultTTL() time.Duration {
 	return s.defaultTTL
 }
+
+// CheckRedisConnection checks if the Redis connection is working
+func (s *Service) CheckRedisConnection() error {
+	return s.redisClient.CheckRedisConnection()
+}

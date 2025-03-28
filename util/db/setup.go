@@ -3,19 +3,23 @@ package setup
 import (
 	"context"
 	"fmt"
-	"log"
+	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
+	setup "github.com/riad/banksystemendtoend/util/cache"
 	"github.com/riad/banksystemendtoend/util/common"
 	"github.com/riad/banksystemendtoend/util/config"
 	"github.com/riad/banksystemendtoend/util/env"
+	"go.uber.org/zap"
 )
 
 var (
 	store db.Store
+	pool  *pgxpool.Pool
 	ctx   = context.Background()
+	log   = zap.L()
 )
 
 // InitializeDB initializes database connection with custom config
@@ -58,23 +62,47 @@ func DropAllData(ctx context.Context, store db.Store) error {
 func InitializeEnvironment(environment config.Environment) error {
 	config, err := env.NewAppEnvironmentConfig(environment.AppEnv)
 	if err != nil {
+		log.Error("Failed to create app environment config", zap.String("environment", string(environment.AppEnv)), zap.Error(err))
 		return err
 	}
 
+	// Initialize database
 	store, err = InitializeDB(ctx, config, environment.Prefix)
 	if err != nil {
+		log.Error("Failed to initialize database", zap.String("prefix", environment.Prefix), zap.Error(err))
 		return err
 	}
 
 	_, err = db.GetSQLStore(store)
 	if err != nil {
+		log.Error("Failed to get SQL store", zap.Error(err))
 		return err
 	}
 
-	log.Printf("Successfully connected to %s database", environment)
+	// Initialize Redis
+	_, err = setup.InitializeRedis(config, environment.Prefix)
+	if err != nil {
+		log.Error("Failed to initialize Redis", zap.String("prefix", environment.Prefix), zap.Error(err))
+		return fmt.Errorf("failed to initialize Redis: %w", err)
+	}
+
+	log.Info("Successfully connected to database", zap.String("environment", string(environment.AppEnv)))
 	return nil
 }
 
+// GetStore return initialized store for db
 func GetStore() db.Store {
 	return store
+}
+
+// CheckDBHealth  checks if the Redis connection is working
+func CheckDBHealth(ctx context.Context) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	if err := pool.Ping(timeoutCtx); err != nil {
+		log.Error("database health check failed %w", zap.Error(err))
+		return fmt.Errorf("database health check failed %w", err)
+	}
+	return nil
 }
