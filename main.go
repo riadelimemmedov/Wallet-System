@@ -7,8 +7,7 @@ import (
 	"syscall"
 
 	"github.com/riad/banksystemendtoend/api"
-	"github.com/riad/banksystemendtoend/api/middleware"
-	"github.com/riad/banksystemendtoend/api/middleware/logger/config"
+	logger "github.com/riad/banksystemendtoend/pkg/log"
 	environment_config "github.com/riad/banksystemendtoend/util/config"
 	setup "github.com/riad/banksystemendtoend/util/db"
 	"go.uber.org/zap"
@@ -16,27 +15,19 @@ import (
 
 // ! Application represents the main application configuration
 type Application struct {
-	logger *middleware.Logger
 	server *api.Server
 }
 
 // ! NewApplication initializes a new application instance
 func NewApplication() (*Application, error) {
-	logger, err := middleware.NewLogger(config.LoggerConfig{
-		Filename:   "logs/app.log",
-		TimeFormat: "2006-01-02 15:04:05",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize logger: %w", err)
-	}
 
+	logger.GetLogger().Info("Starting wallet system application")
 	server, err := api.NewServer()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize server: %w", err)
 	}
 
 	return &Application{
-		logger: logger,
 		server: server,
 	}, nil
 }
@@ -52,7 +43,7 @@ func run() error {
 		return err
 	}
 
-	app.logger.ZapLogger.Info("✅ Database connection established")
+	logger.GetLogger().Info("✅ Database connection established")
 
 	go func() {
 		port := os.Getenv("PORT")
@@ -61,7 +52,7 @@ func run() error {
 		}
 
 		if err := app.server.Start(fmt.Sprintf(":%s", port)); err != nil {
-			app.logger.ZapLogger.Error("Failed to start server", zap.Error(err))
+			logger.GetLogger().Error("Failed to start server", zap.Error(err))
 		}
 	}()
 
@@ -74,7 +65,7 @@ func (app *Application) waitForShutdown() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	<-quit
-	app.logger.ZapLogger.Info("🔄 Shutting down server...")
+	logger.GetLogger().Info("🔄 Shutting down server...")
 
 	return nil
 }

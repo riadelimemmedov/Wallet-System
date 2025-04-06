@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/riad/banksystemendtoend/pkg/cache"
+	logger "github.com/riad/banksystemendtoend/pkg/log"
 	"go.uber.org/zap"
 )
 
@@ -20,23 +21,28 @@ func NewCacheableRepository(cacheService *cache.Service) *CacheableRepository {
 
 // GetCached retrieves a value from the cache by key. If the key is not found, it calls the getter function to get the value and caches it.
 func (r *CacheableRepository) GetCached(ctx context.Context, key string, result interface{}, getter func() (interface{}, error)) error {
+	//!Cache Side
 	err := r.cacheService.Get(ctx, key, result)
 	if err == nil {
 		return nil
 	}
+
 	if err != cache.ErrCacheMiss {
-		zap.L().Error("failed to get item from cache miss", zap.Error(err))
-		return err
+		logger.GetLogger().Error("failed to get item from cache", zap.Error(err))
 	}
+
+	//!Db Side
 	item, err := getter()
 	if err != nil {
-		zap.L().Error("failed to get item from getter", zap.Error(err))
+		logger.GetLogger().Error("failed to get item from getter", zap.Error(err))
 		return err
+	}
+	if r.cacheService == nil {
+		return nil
 	}
 	go func() {
 		if err := r.cacheService.Set(context.Background(), key, item); err != nil {
-			zap.L().Error("failed to set item in cache", zap.Error(err))
-			fmt.Printf("failed to set item in cache: %v", err)
+			logger.GetLogger().Error("failed to set item in cache", zap.Error(err))
 		}
 	}()
 
@@ -44,8 +50,8 @@ func (r *CacheableRepository) GetCached(ctx context.Context, key string, result 
 	tempKey := fmt.Sprintf("temp:%s", key)
 
 	if err := r.cacheService.Set(tempCtx, tempKey, item); err != nil {
-		zap.L().Error("failed to set item in temp cache", zap.Error(err))
-		return err
+		logger.GetLogger().Error("failed to set item in temp cache", zap.Error(err))
+		return nil
 	}
 
 	err = r.cacheService.Get(tempCtx, tempKey, result)

@@ -8,14 +8,10 @@ import (
 	"github.com/riad/banksystemendtoend/api/dependency"
 	"github.com/riad/banksystemendtoend/api/middleware"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
+	logger "github.com/riad/banksystemendtoend/pkg/log"
 	cache_setup "github.com/riad/banksystemendtoend/util/cache"
 	db_setup "github.com/riad/banksystemendtoend/util/db"
-
 	"go.uber.org/zap"
-)
-
-var (
-	log = zap.L()
 )
 
 type Server struct {
@@ -29,21 +25,17 @@ func NewServer() (*Server, error) {
 	// Get the initialized store and Redis client
 	store, err := db.GetSQLStore(db_setup.GetStore())
 	if err != nil {
-		log.Error("Failed to get SQL store", zap.Error(err))
+		logger.GetLogger().Error("Failed to get SQL store", zap.Error(err))
 		return nil, err
 	}
 
 	// Get the Redis client that was initialized in InitializeEnvironment
-	redisClient, err := cache_setup.GetRedisClient()
-	if err != nil {
-		log.Error("Failed to get Redis client", zap.Error(err))
-		return nil, err
-	}
+	redisClient := cache_setup.GetRedisClient()
 
 	// Create dependencies container with DbStore and Redis client
 	dependencies, err := dependency.NewDependencyContainer(store, redisClient)
 	if err != nil {
-		log.Error("Failed to create dependency container", zap.Error(err))
+		logger.GetLogger().Error("Failed to create dependency container", zap.Error(err))
 		return nil, err
 	}
 
@@ -89,25 +81,30 @@ func (s *Server) setupRouter() {
 	//Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
 		cacheService := s.dependencies.GetCacheService()
+		store, _ := db.GetSQLStore(db_setup.GetStore())
 
 		redisStatus := "up"
 		dbStatus := "up"
 
-		//Redis connection test
-		err = cacheService.CheckRedisConnection()
-		if err != nil {
-			redisStatus = "down"
-			log.Error("Failed to connect Redis", zap.Error(err))
+		if cacheService != nil {
+			is_connect := cacheService.CheckRedisConnection()
+			if !is_connect {
+				redisStatus = "down"
+				logger.GetLogger().Error("Failed to connect Redis", zap.Error(err))
+			}
+		} else {
+			redisStatus = "not_configured"
+			logger.GetLogger().Warn("Redis service not configured")
 		}
 
 		// Database connection test
-		err = db_setup.CheckDBHealth(c.Request.Context())
+		err = db_setup.CheckDBHealth(c.Request.Context(), store)
 		if err != nil {
 			dbStatus = "down"
-			log.Error("Failed to connect DB", zap.Error(err))
+			logger.GetLogger().Error("Failed to connect DB", zap.Error(err))
 		}
 
-		c.JSON(http.StatusOK, gin.H{"api": "up", "redis": redisStatus, "db": dbStatus})
+		c.JSON(http.StatusOK, gin.H{"api": "up", "redis": redisStatus, "database": dbStatus})
 	})
 	s.router = router
 }

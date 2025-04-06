@@ -70,7 +70,7 @@ func InitializeEnvironment(environment config.Environment) error {
 	store, err = InitializeDB(ctx, config, environment.Prefix)
 	if err != nil {
 		log.Error("Failed to initialize database", zap.String("prefix", environment.Prefix), zap.Error(err))
-		return err
+		return nil
 	}
 
 	_, err = db.GetSQLStore(store)
@@ -83,7 +83,7 @@ func InitializeEnvironment(environment config.Environment) error {
 	_, err = setup.InitializeRedis(config, environment.Prefix)
 	if err != nil {
 		log.Error("Failed to initialize Redis", zap.String("prefix", environment.Prefix), zap.Error(err))
-		return fmt.Errorf("failed to initialize Redis: %w", err)
+		return nil
 	}
 
 	log.Info("Successfully connected to database", zap.String("environment", string(environment.AppEnv)))
@@ -95,14 +95,25 @@ func GetStore() db.Store {
 	return store
 }
 
-// CheckDBHealth  checks if the Redis connection is working
-func CheckDBHealth(ctx context.Context) error {
+// CheckDBHealth checks the health of the database connection
+func CheckDBHealth(ctx context.Context, store db.Store) error {
+	sqlStore, err := db.GetSQLStore(store)
+	if err != nil {
+		log.Error("Failed to get SQL store", zap.Error(err))
+		return fmt.Errorf("failed to get SQL store: %w", err)
+	}
+
+	if sqlStore.Pool == nil {
+		log.Error("Database pool is not initialized")
+		return fmt.Errorf("database pool is not initialized")
+	}
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
-	if err := pool.Ping(timeoutCtx); err != nil {
-		log.Error("database health check failed %w", zap.Error(err))
-		return fmt.Errorf("database health check failed %w", err)
+	if err := sqlStore.Pool.Ping(timeoutCtx); err != nil {
+		log.Error("Database health check failed", zap.Error(err))
+		return fmt.Errorf("database health check failed: %w", err)
 	}
 	return nil
 }

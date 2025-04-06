@@ -26,6 +26,7 @@ type Config struct {
 	DB              int
 	PoolSize        int
 	MinIdleConns    int
+	MaxRetries      int
 	MaxConnLifetime time.Duration
 	IdleTimeout     time.Duration
 	DialTimeout     time.Duration
@@ -45,20 +46,12 @@ func NewClient(config Config) (*Client, error) {
 		Password:     config.Password,
 		DB:           config.DB,
 		PoolSize:     config.PoolSize,
-		MinIdleConns: 5,
-		MaxRetries:   3,
+		MinIdleConns: config.MinIdleConns,
+		MaxRetries:   config.MaxRetries,
 		DialTimeout:  config.DialTimeout,
 		ReadTimeout:  config.ReadTimeout,
 		WriteTimeout: config.WriteTimeout,
 	})
-
-	//? Check if the connection is working
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		log.Fatal("Failed to connect to Redis", zap.Error(err))
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
-	}
 	return &Client{client: rdb}, nil
 }
 
@@ -69,6 +62,9 @@ func (c *Client) Get(ctx context.Context, key string) (string, error) {
 
 // Set stores a value in Redis with an expiration time
 func (c *Client) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+	if c == nil || c.client == nil {
+		return fmt.Errorf("redis client is nil")
+	}
 	return c.client.Set(ctx, key, value, expiration).Err()
 }
 
@@ -123,7 +119,11 @@ func (c *Client) GetConnectionStats(ctx context.Context) *redis.PoolStats {
 
 // CheckRedisConnection checks if the Redis connection is working
 func (c *Client) CheckRedisConnection() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	if c == nil || c.client == nil {
+		return fmt.Errorf("redis client is nil")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := c.client.Ping(ctx).Err(); err != nil {

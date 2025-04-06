@@ -50,7 +50,7 @@ func (r *accountTypeRepository) GetAccountType(ctx context.Context, accountType 
 func (r *accountTypeRepository) ListAccountTypes(ctx context.Context) ([]db.AccountType, error) {
 	var result []db.AccountType
 
-	err := r.cacheable.GetCached(ctx, "list_accoun_types", &result, func() (interface{}, error) {
+	err := r.cacheable.GetCached(ctx, "list_account_types", &result, func() (interface{}, error) {
 		return r.store.ListAccountTypes(ctx)
 	})
 	return result, err

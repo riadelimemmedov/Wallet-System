@@ -2,7 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/riad/banksystemendtoend/util/config"
@@ -61,4 +64,26 @@ func GetValidAccountTypesMessage() string {
 		types = append(types, v)
 	}
 	return fmt.Sprintf("invalid account type: must be one of %s", strings.Join(types, ", "))
+}
+
+// GetEnvAsInt returns the value of the environment variable as an integer
+func GetEnvAsInt(key string, defaultVal int) int {
+	if value, exists := os.LookupEnv(key); exists {
+		intVal, err := strconv.Atoi(value)
+		if err == nil {
+			return intVal
+		}
+	}
+	return defaultVal
+}
+
+// GetEnvAsDuration returns the value of the environment variable as a duration
+func GetEnvAsDuration(key string, defaultVal time.Duration) time.Duration {
+	if value, exists := os.LookupEnv(key); exists {
+		durationVal, err := time.ParseDuration(value)
+		if err == nil {
+			return durationVal
+		}
+	}
+	return defaultVal
 }
