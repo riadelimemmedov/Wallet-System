@@ -269,3 +269,7 @@ docker-logs:
 
 
 # docker exec simple_bank_dev_api migrate -path db/migration/ -database "postgresql://postgres:123321@postgres:5433/simple_bank_dev?sslmode=disable" --verbose up
+# docker exec -it b62 redis-cli
+# docker ps | findstr redis
+
+# docker exec -it b62 redis-cli -a 6V@b)B5V)V2K

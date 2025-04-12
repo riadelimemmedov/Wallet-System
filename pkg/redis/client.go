@@ -117,6 +117,7 @@ func (c *Client) GetConnectionStats(ctx context.Context) *redis.PoolStats {
 // CheckRedisConnection checks if the Redis connection is working
 func (c *Client) CheckRedisConnection() error {
 	if c == nil || c.client == nil {
+		logger.GetLogger().Error("redis client is nil")
 		return fmt.Errorf("redis client is nil")
 	}
 

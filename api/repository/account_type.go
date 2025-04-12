@@ -4,6 +4,9 @@ import (
 	"context"
 
 	interface_repository "github.com/riad/banksystemendtoend/api/interface/repository"
+	logger "github.com/riad/banksystemendtoend/pkg/log"
+	"go.uber.org/zap"
+
 	db "github.com/riad/banksystemendtoend/db/sqlc"
 	"github.com/riad/banksystemendtoend/pkg/cache"
 )
@@ -48,12 +51,20 @@ func (r *accountTypeRepository) GetAccountType(ctx context.Context, accountType 
 }
 
 func (r *accountTypeRepository) ListAccountTypes(ctx context.Context) ([]db.AccountType, error) {
-	var result []db.AccountType
-
-	err := r.cacheable.GetCached(ctx, "list_account_types", &result, func() (interface{}, error) {
-		return r.store.ListAccountTypes(ctx)
+	var cachedTypes []db.AccountType
+	accountTypes, dbErr := r.store.ListAccountTypes(ctx)
+	if dbErr != nil {
+		logger.GetLogger().Error("failed to list account types from database", zap.Error(dbErr))
+		return nil, dbErr
+	}
+	cacheErr := r.cacheable.GetCached(ctx, "list_account_types", &cachedTypes, func() (interface{}, error) {
+		return accountTypes, nil
 	})
-	return result, err
+	if cacheErr != nil {
+		logger.GetLogger().Error("failed to handle cached account types", zap.Error(cacheErr))
+		return accountTypes, nil
+	}
+	return cachedTypes, nil
 }
 
 func (r *accountTypeRepository) UpdateAccountType(ctx context.Context, arg db.UpdateAccountTypeParams) (db.AccountType, error) {

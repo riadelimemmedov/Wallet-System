@@ -3,19 +3,14 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
 
+	apperrors "github.com/riad/banksystemendtoend/apperrors"
 	logger "github.com/riad/banksystemendtoend/pkg/log"
 	"github.com/riad/banksystemendtoend/pkg/redis"
 	"go.uber.org/zap"
-)
-
-var (
-	// ErrCacheMiss is returned when a key is not found in the cache
-	ErrCacheMiss = errors.New("cache miss")
 )
 
 // DefaultExpiration is the default expiration time for cache entries
@@ -50,49 +45,52 @@ func NewService(redisClient *redis.Client, prefix string, defaultTTL time.Durati
 
 // Get retrieves a value from the cache and unmarshals it into the provided target
 func (s *Service) Get(ctx context.Context, key string, target interface{}) error {
-	if !s.checkConnection(ctx) {
-		return ErrCacheMiss
-	}
-	prefixedKey := s.buildKey(key)
-	data, err := s.redisClient.Get(ctx, prefixedKey)
-	if err != nil {
-		if err.Error() == "redis: nil" {
-			return ErrCacheMiss
-		}
-		logger.GetLogger().Error("Failed to get key from cache",
-			zap.String("key", key),
-			zap.Error(err))
-		return fmt.Errorf("failed to get key %s from cache: %w", key, err)
-	}
+	err := s.checkConnection(ctx)
 
-	if err := json.Unmarshal([]byte(data), target); err != nil {
-		logger.GetLogger().Error("Failed to unmarshal data",
-			zap.String("key", key),
-			zap.Error(err))
-		return fmt.Errorf("failed to unmarshal data for key %s: %w", key, err)
+	if !apperrors.IsRedisConnectionError(err) {
+		prefixedKey := s.buildKey(key)
+		data, err := s.redisClient.Get(ctx, prefixedKey)
+		if err != nil {
+			if apperrors.IsRedisDataError(err) {
+				logger.GetLogger().Warn("Cache miss", zap.String("key", "cache_miss"))
+				return apperrors.ErrCacheMiss
+			}
+			logger.GetLogger().Error("Failed to get key from cache",
+				zap.String("key", key),
+				zap.Error(err))
+			return apperrors.ErrRedisKeyFetchFailed
+		}
+
+		if err := json.Unmarshal([]byte(data), target); err != nil {
+			logger.GetLogger().Error("Failed to unmarshal data",
+				zap.String("key", key),
+				zap.Error(err))
+			return apperrors.ErrRedisUnmarshalFailed
+		}
+		return nil
 	}
-	return nil
+	return err
+
 }
 
 // Set stores a value in the cache with the default TTL
 func (s *Service) Set(ctx context.Context, key string, value interface{}, ttl ...time.Duration) error {
-	if !s.checkConnection(ctx) {
-		return ErrCacheMiss
+	err := s.checkConnection(ctx)
+	if !apperrors.IsRedisConnectionError(err) {
+		expiration := s.defaultTTL
+		if len(ttl) > 0 {
+			expiration = ttl[0]
+		}
+		return s.SetWithTTL(ctx, key, value, expiration)
 	}
-
-	expiration := s.defaultTTL
-	if len(ttl) > 0 {
-		expiration = ttl[0]
-	}
-	return s.SetWithTTL(ctx, key, value, expiration)
+	logger.GetLogger().Error("Redis connection down when try to set data to cache",
+		zap.String("key", key),
+		zap.Error(err))
+	return nil
 }
 
 // SetWithTTL stores a value in the cache with a custom TTL
 func (s *Service) SetWithTTL(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
-	if s.redisClient == nil {
-		return nil
-	}
-
 	prefixedKey := s.buildKey(key)
 	data, err := json.Marshal(value)
 	if err != nil {
@@ -112,14 +110,18 @@ func (s *Service) SetWithTTL(ctx context.Context, key string, value interface{},
 
 // Delete removes a value from the cache
 func (s *Service) Delete(ctx context.Context, key string) error {
-	prefixedKey := s.buildKey(key)
-	err := s.redisClient.Delete(ctx, prefixedKey)
-	if err != nil {
-		logger.GetLogger().Error("Failed to delete key from cache",
-			zap.String("key", key),
-			zap.Error(err))
+	err := s.checkConnection(ctx)
+	if !apperrors.IsRedisConnectionError(err) {
+		prefixedKey := s.buildKey(key)
+		err := s.redisClient.Delete(ctx, prefixedKey)
+		if err != nil {
+			logger.GetLogger().Error("Failed to delete key from cache",
+				zap.String("key", key),
+				zap.Error(err))
+			return fmt.Errorf("failed to delete from cache")
+		}
 	}
-	return err
+	return nil
 }
 
 // DeleteByPattern removes values matching a pattern from the cache
@@ -136,18 +138,18 @@ func (s *Service) DeleteByPattern(ctx context.Context, pattern string) error {
 
 // Exists checks if a key exists in the cache
 func (s *Service) Exists(ctx context.Context, key string) (bool, error) {
-	if !s.checkConnection(ctx) {
-		return false, nil
+	err := s.checkConnection(ctx)
+	if !apperrors.IsRedisConnectionError(err) {
+		prefixedKey := s.buildKey(key)
+		exists, err := s.redisClient.Exists(ctx, prefixedKey)
+		if err != nil {
+			logger.GetLogger().Error("Failed to check key existence",
+				zap.String("key", key),
+				zap.Error(err))
+		}
+		return exists, err
 	}
-
-	prefixedKey := s.buildKey(key)
-	exists, err := s.redisClient.Exists(ctx, prefixedKey)
-	if err != nil {
-		logger.GetLogger().Error("Failed to check key existence",
-			zap.String("key", key),
-			zap.Error(err))
-	}
-	return exists, err
+	return false, nil
 }
 
 // GetRedisClient returns the underlying Redis client

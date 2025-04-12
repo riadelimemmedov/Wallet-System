@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	apperrors "github.com/riad/banksystemendtoend/apperrors"
 	logger "github.com/riad/banksystemendtoend/pkg/log"
+
 	"go.uber.org/zap"
 )
 
@@ -18,12 +20,12 @@ func (s *Service) buildKey(key string) string {
 }
 
 // checkConnection checks if Redis is available and implements circuit-breaker pattern
-func (s *Service) checkConnection(ctx context.Context) bool {
+func (s *Service) checkConnection(ctx context.Context) error {
 	if s.redisAvailable.Load() {
 		now := time.Now().Unix()
 		lastCheck := s.lastCheckTime.Load()
 		if now-lastCheck < int64(s.checkInterval.Seconds()) {
-			return true
+			return apperrors.ErrRedisConnectionAvailable
 		}
 	}
 	connectionOK := s.CheckRedisConnection()
@@ -35,11 +37,12 @@ func (s *Service) checkConnection(ctx context.Context) bool {
 		logger.GetLogger().Warn("Redis connection unavailable",
 			zap.String("prefix", s.prefix),
 			zap.Time("timestamp", time.Now()))
+		return apperrors.ErrRedisConnectionUnavailable
 	} else if !s.redisAvailable.Load() {
 		logger.GetLogger().Info("Redis connection recovered",
 			zap.String("prefix", s.prefix),
 			zap.Time("timestamp", time.Now()))
+		return apperrors.ErrRedisConnectionAvailable
 	}
-
-	return connectionOK
+	return apperrors.ErrRedisConnectionAvailable
 }
