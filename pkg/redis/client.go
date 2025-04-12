@@ -6,11 +6,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	logger "github.com/riad/banksystemendtoend/pkg/log"
 	"go.uber.org/zap"
-)
-
-var (
-	log = zap.L()
 )
 
 // Client wraps redis client with additional functionality
@@ -77,7 +74,7 @@ func (c *Client) Delete(ctx context.Context, key string) error {
 func (c *Client) DeleteByPattern(ctx context.Context, pattern string) error {
 	keys, err := c.client.Keys(ctx, pattern).Result()
 	if err != nil {
-		log.Error("Failed to get keys", zap.Error(err))
+		logger.GetLogger().Error("Failed to get keys", zap.Error(err))
 		return fmt.Errorf("failed to get keys when delete by pattern: %w", err)
 	}
 	if len(keys) > 0 {
@@ -127,7 +124,7 @@ func (c *Client) CheckRedisConnection() error {
 	defer cancel()
 
 	if err := c.client.Ping(ctx).Err(); err != nil {
-		log.Error("Failed to connect to Redis", zap.Error(err))
+		logger.GetLogger().Error("Failed to connect to Redis", zap.Error(err))
 		return fmt.Errorf("failed to connect to Redis %w", err)
 	}
 	return nil
@@ -136,12 +133,12 @@ func (c *Client) CheckRedisConnection() error {
 // UpdateClient modifies the Redis client configuration
 func (c *Client) UpdateClient(ctx context.Context, redisConfig Config) error {
 	if err := c.Close(); err != nil {
-		log.Error("Failed to close Redis client", zap.Error(err))
+		logger.GetLogger().Error("Failed to close Redis client", zap.Error(err))
 		return fmt.Errorf("error closing existing Redis client: %w", err)
 	}
 	newClient, err := NewClient(redisConfig)
 	if err != nil {
-		log.Error("Failed to update Redis client", zap.Error(err))
+		logger.GetLogger().Error("Failed to update Redis client", zap.Error(err))
 		return fmt.Errorf("error updatingh new Redis client %w", err)
 	}
 	*c = *newClient
