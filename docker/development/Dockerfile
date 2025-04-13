@@ -1,5 +1,5 @@
 # Development Dockerfile
-FROM golang:1.21-alpine3.18 AS development
+FROM golang:1.22-alpine3.18 AS development
 
 # Add git and build essentials for CGO
 RUN apk add --no-cache \
