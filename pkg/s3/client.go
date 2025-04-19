@@ -101,7 +101,7 @@ func (s *S3Service) initialize() error {
 	return nil
 }
 
-// prepareRequest ensures service is initialized and formats the key with proper prefix
+// ! prepareRequest ensures service is initialized and formats the key with proper prefix
 func (s *S3Service) prepareRequest(key string) (string, error) {
 	if !s.initialized {
 		if err := s.initialize(); err != nil {
@@ -132,7 +132,7 @@ func (s *S3Service) testConnection() error {
 	return err
 }
 
-// UploadFile uploads a file to s3
+// ! UploadFile uploads a file to s3
 func (s *S3Service) UploadFile(ctx context.Context, key string, data []byte, contentType string) (string, error) {
 	processedKey, err := s.prepareRequest(key)
 	if err != nil {
@@ -157,12 +157,32 @@ func (s *S3Service) UploadFile(ctx context.Context, key string, data []byte, con
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", s.config.Bucket, s.config.Region, key), nil
 }
 
-// !IMPLEMENT Later
+// ! UploadLargeFile uploads a large file to S3 using multipart upload
 func (s *S3Service) UploadLargeFile(ctx context.Context, key string, reader io.Reader, contentType string) (string, error) {
-	return "", nil
+	processedKey, err := s.prepareRequest(key)
+	if err != nil {
+		return "", err
+	}
+
+	uploadID, err := s.createMultipartUpload(ctx, processedKey, contentType)
+	if err != nil {
+		return "", err
+	}
+
+	parts, err := s.uploadParts(ctx, processedKey, uploadID, reader)
+	if err != nil {
+		s.abortMultipartUpload(ctx, processedKey, uploadID)
+		return "", err
+	}
+
+	if err := s.completeMultipartUpload(ctx, processedKey, uploadID, parts); err != nil {
+		return "", err
+	}
+
+	return s.generateFileURL(processedKey), nil
 }
 
-// DownloadFile downloads a file from s3
+// ! DownloadFile downloads a file from s3
 func (s *S3Service) DownloadFile(ctx context.Context, key string) ([]byte, error) {
 	processedKey, err := s.prepareRequest(key)
 	if err != nil {
@@ -217,7 +237,7 @@ func (s *S3Service) ListFiles(ctx context.Context, prefix string) ([]string, err
 	return keys, nil
 }
 
-// DeleteFile deletes a file from S3
+// ! DeleteFile deletes a file from S3
 func (s *S3Service) DeleteFile(ctx context.Context, key string) error {
 	processedKey, err := s.prepareRequest(key)
 	if err != nil {
@@ -239,7 +259,7 @@ func (s *S3Service) DeleteFile(ctx context.Context, key string) error {
 	return nil
 }
 
-// FileExists checks if a file exists in S3
+// ! FileExists checks if a file exists in S3
 func (s *S3Service) FileExists(ctx context.Context, key string) (bool, error) {
 	processedKey, err := s.prepareRequest(key)
 	if err != nil {
@@ -252,7 +272,7 @@ func (s *S3Service) FileExists(ctx context.Context, key string) (bool, error) {
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "NotFound") || strings.Contains(err.Error(), "404") {
+		if isNotFoundError(err) {
 			return false, nil
 		}
 		logger.Error("Failed to check if file exists",
@@ -265,7 +285,7 @@ func (s *S3Service) FileExists(ctx context.Context, key string) (bool, error) {
 	return true, nil
 }
 
-// Close close s3 connection
+// ! Close close s3 connection
 func (s *S3Service) Close() error {
 	return nil
 }
