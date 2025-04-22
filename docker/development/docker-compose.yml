@@ -44,6 +44,29 @@ services:
     networks:
       - bank-network
 
+  rabbitmq:
+    container_name: simple_bank_rabbitmq
+    image: rabbitmq:3.12-management-alpine
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-admin123}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST:-/}
+    ports:
+      - "${RABBITMQ_HOST_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bank-network
+
   api:
     container_name: simple_bank_dev_api
     build:
@@ -78,13 +101,64 @@ services:
       - REDIS_READ_TIMEOUT=${DEV_REDIS_READ_TIMEOUT:-20s}
       - REDIS_WRITE_TIMEOUT=${DEV_REDIS_WRITE_TIMEOUT:-20s}
       - REDIS_MAX_RETRIES=${DEV_REDIS_MAX_RETRIES:-3}
+      # RabbitMQ settings
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-/}
+      # File upload settings
+      - UPLOAD_TEMP_DIR=${UPLOAD_TEMP_DIR:-/tmp/uploads}
+      - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-10485760}
+      - UPLOAD_WORKERS=${UPLOAD_WORKERS:-5}
       # API settings
       - GIN_MODE=debug
       - PORT=${DEV_API_CONTAINER_PORT}
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     command: air
+    networks:
+      - bank-network
+
+  upload_worker:
+    container_name: simple_bank_upload_worker
+    build:
+      context: ../..
+      dockerfile: docker/development/Dockerfile.worker
+    restart: on-failure:5
+    env_file:
+      - ./.env
+    volumes:
+      - ../..:/app
+      - upload-temp:/tmp/uploads
+    environment:
+      # Database settings
+      - DB_SOURCE=${DEV_DB_SOURCE}
+      # Redis settings
+      - REDIS_HOST=${DEV_REDIS_HOST:-redis}
+      - REDIS_PORT=${DEV_REDIS_PORT:-6379}
+      # RabbitMQ settings
+      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-/}
+      # S3 settings
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_BUCKET=${AWS_BUCKET:-my-upload-bucket}
+      - AWS_PREFIX=${AWS_PREFIX:-uploads}
+      # Worker settings
+      - UPLOAD_TEMP_DIR=${UPLOAD_TEMP_DIR:-/tmp/uploads}
+      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-10}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    command: go run cmd/worker/main.go
     networks:
       - bank-network
 
@@ -97,3 +171,7 @@ volumes:
     name: simple_bank_dev_data
   redis-dev-data:
     name: simple_bank_dev_redis_data
+  rabbitmq-data:
+    name: simple_bank_rabbitmq_data
+  upload-temp:
+    name: simple_bank_upload_temp
