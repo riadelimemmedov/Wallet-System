@@ -1,6 +1,8 @@
 package rabbitmq
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -192,4 +194,166 @@ func (c *Client) reconnect(reason, errMsg string) {
 	c.mu.Lock()
 	c.reconnecting = false
 	c.mu.Unlock()
+}
+
+// DeclareQueue declares a queue to the broker
+func (c *Client) DeclareQueue(name string, durable, autoDelete, exclusive bool) (amqp.Queue, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isConnected {
+		logger.Error("RabbitMQ client is not connected when declaring queue")
+		return amqp.Queue{}, fmt.Errorf("RabbitMQ client is not connected when declaring queue")
+	}
+
+	return c.ch.QueueDeclare(
+		name,
+		durable,
+		autoDelete,
+		exclusive,
+		false,
+		nil,
+	)
+}
+
+// DeclareExchange declares an exchange to the broker
+func (c *Client) DeclareExchange(name, kind string, durable, autoDelete, internal bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isConnected {
+		logger.Error("RabbitMQ client is not connected when declaring exchange")
+		return fmt.Errorf("RabbitMQ client is not connected when declaring exchange")
+	}
+
+	return c.ch.ExchangeDeclare(
+		name,
+		kind,
+		durable,
+		autoDelete,
+		internal,
+		false,
+		nil,
+	)
+}
+
+// BindQueue binds a queue to an exchange
+func (c *Client) BindQueue(name, key, exchange string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isConnected {
+		logger.Error("RabbitMQ client is not connected when binding queue")
+		return fmt.Errorf("RabbitMQ client is not connected when binding queue")
+	}
+
+	return c.ch.QueueBind(
+		name,
+		key,
+		exchange,
+		false,
+		nil,
+	)
+}
+
+// Publish publishes a message to an exchange
+func (c *Client) Publish(ctx context.Context, exchange, routingKey string, msg Message) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isConnected {
+		logger.Error("RabbitMQ client is not connected when publishing message")
+		return fmt.Errorf("RabbitMQ client is not connected when publishing message")
+	}
+
+	return c.ch.PublishWithContext(
+		ctx,
+		exchange,
+		routingKey,
+		false,
+		false,
+		amqp.Publishing{
+			ContentType:  msg.ContentType,
+			Body:         msg.Body,
+			DeliveryMode: amqp.Persistent,
+			Priority:     msg.Priority,
+			Expiration:   msg.Expiration,
+			Timestamp:    time.Now(),
+		},
+	)
+}
+
+// PublishJSON publishes a JSON message to an exchange
+func (c *Client) PublishJSON(ctx context.Context, exchange, routingKey string, obj interface{}) error {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		logger.Error("Failed to marshal JSON", zap.Error(err))
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	msg := Message{
+		ContentType: "application/json",
+		Body:        data,
+	}
+	return c.Publish(ctx, exchange, routingKey, msg)
+}
+
+// Consume starts consuming messages from a queue
+func (c *Client) Consume(queue, consumer string, autoAck, exclusive bool) (<-chan amqp.Delivery, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isConnected {
+		logger.Error("RabbitMQ client is not connected when consuming messages")
+		return nil, fmt.Errorf("RabbitMQ client is not connected when consuming messages")
+	}
+
+	return c.ch.Consume(
+		queue,
+		consumer,
+		autoAck,
+		exclusive,
+		false,
+		false,
+		nil,
+	)
+}
+
+// QoS sets the quality of service for the channel
+func (c *Client) QoS(prefetchCount, prefetchSize int, global bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if !c.isConnected {
+		logger.Error("RabbitMQ client is not connected when setting QoS")
+		return fmt.Errorf("RabbitMQ client is not connected when setting QoS")
+	}
+
+	return c.ch.Qos(prefetchCount, prefetchSize, global)
+}
+
+// Close closes the channel and connection
+func (c *Client) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	close(c.quit)
+
+	if !c.isConnected {
+		return nil
+	}
+
+	if err := c.ch.Close(); err != nil {
+		logger.Error("Failed to close channel", zap.Error(err))
+		return fmt.Errorf("failed to close channel: %w", err)
+	}
+
+	if err := c.conn.Close(); err != nil {
+		logger.Error("Failed to close connection", zap.Error(err))
+		return fmt.Errorf("failed to close connection: %w", err)
+	}
+
+	c.isConnected = false
+	logger.GetLogger().Info("RabbitMQ client closed Successfully")
+	return nil
 }
