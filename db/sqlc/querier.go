@@ -12,13 +12,16 @@ import (
 )
 
 type Querier interface {
+	CountUserUploads(ctx context.Context, userID int32) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateAccountType(ctx context.Context, arg CreateAccountTypeParams) (AccountType, error)
 	CreateCurrency(ctx context.Context, arg CreateCurrencyParams) (AccountCurrency, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
+	CreateFileMetadata(ctx context.Context, arg CreateFileMetadataParams) (FileMetadatum, error)
 	CreateTransaction(ctx context.Context, arg CreateTransactionParams) (Transaction, error)
 	CreateTransactionStatus(ctx context.Context, arg CreateTransactionStatusParams) (TransactionStatus, error)
 	CreateTransactionType(ctx context.Context, arg CreateTransactionTypeParams) (TransactionType, error)
+	CreateUploadJob(ctx context.Context, arg CreateUploadJobParams) (UploadJob, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAccount(ctx context.Context, accountID int32) error
 	DeleteAccountTransactions(ctx context.Context, fromAccountID sql.NullInt32) error
@@ -29,6 +32,7 @@ type Querier interface {
 	DeleteTransactionType(ctx context.Context, typeCode string) error
 	DeleteTransactionsByDateRange(ctx context.Context, arg DeleteTransactionsByDateRangeParams) error
 	DeleteTransactionsByStatus(ctx context.Context, statusCode string) error
+	DeleteUploadJob(ctx context.Context, id string) error
 	DeleteUser(ctx context.Context, userID int32) error
 	GetAccount(ctx context.Context, accountID int32) (Account, error)
 	GetAccountBalance(ctx context.Context, accountID sql.NullInt32) (interface{}, error)
@@ -38,6 +42,7 @@ type Querier interface {
 	GetActiveTransactionStatus(ctx context.Context, dollar_1 []string) ([]TransactionStatus, error)
 	GetCurrency(ctx context.Context, currencyCode string) (AccountCurrency, error)
 	GetEntry(ctx context.Context, id int64) (Entry, error)
+	GetFileMetadata(ctx context.Context, id int32) (FileMetadatum, error)
 	GetTransaction(ctx context.Context, transactionID int32) (Transaction, error)
 	GetTransactionBalance(ctx context.Context, fromAccountID sql.NullInt32) (interface{}, error)
 	GetTransactionByReference(ctx context.Context, referenceNumber sql.NullString) (Transaction, error)
@@ -46,6 +51,7 @@ type Querier interface {
 	GetTransactionType(ctx context.Context, typeCode string) (TransactionType, error)
 	GetTransactionsByDateRange(ctx context.Context, arg GetTransactionsByDateRangeParams) ([]Transaction, error)
 	GetTransactionsByStatus(ctx context.Context, statusCode string) ([]Transaction, error)
+	GetUploadJob(ctx context.Context, id string) (UploadJob, error)
 	GetUser(ctx context.Context, userID int32) (User, error)
 	HardDeleteAccount(ctx context.Context, accountID int32) error
 	HardDeleteAccountType(ctx context.Context, accountType string) error
@@ -57,11 +63,17 @@ type Querier interface {
 	ListAccountTransactions(ctx context.Context, arg ListAccountTransactionsParams) ([]Transaction, error)
 	ListAccountTypes(ctx context.Context) ([]AccountType, error)
 	ListAccountsByUser(ctx context.Context, userID int32) ([]Account, error)
+	ListCompletedUploadJobs(ctx context.Context, limit int32) ([]UploadJob, error)
 	ListCurrencies(ctx context.Context) ([]AccountCurrency, error)
 	ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error)
+	ListFailedUploadJobs(ctx context.Context, limit int32) ([]UploadJob, error)
+	ListFilesByMimeType(ctx context.Context, arg ListFilesByMimeTypeParams) ([]FileMetadatum, error)
+	ListPendingUploadJobs(ctx context.Context, limit int32) ([]UploadJob, error)
+	ListProcessingUploadJobs(ctx context.Context, limit int32) ([]UploadJob, error)
 	ListTransactionStatus(ctx context.Context) ([]TransactionStatus, error)
 	ListTransactionTypes(ctx context.Context) ([]TransactionType, error)
 	ListTransactionsByAccount(ctx context.Context, arg ListTransactionsByAccountParams) ([]Transaction, error)
+	ListUseUrploadJobs(ctx context.Context, arg ListUseUrploadJobsParams) ([]UploadJob, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	ModifyTransactionStatus(ctx context.Context, arg ModifyTransactionStatusParams) (TransactionStatus, error)
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error)
@@ -69,6 +81,7 @@ type Querier interface {
 	UpdateExchangeRate(ctx context.Context, arg UpdateExchangeRateParams) (AccountCurrency, error)
 	UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) (Transaction, error)
 	UpdateTransactionType(ctx context.Context, arg UpdateTransactionTypeParams) (TransactionType, error)
+	UpdateUploadJobStatus(ctx context.Context, arg UpdateUploadJobStatusParams) (UploadJob, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
 

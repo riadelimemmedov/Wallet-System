@@ -6,11 +6,58 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 )
+
+type UploadStatus string
+
+const (
+	UploadStatusPENDING    UploadStatus = "PENDING"
+	UploadStatusPROCESSING UploadStatus = "PROCESSING"
+	UploadStatusCOMPLETED  UploadStatus = "COMPLETED"
+	UploadStatusFAILED     UploadStatus = "FAILED"
+	UploadStatusCANCELLED  UploadStatus = "CANCELLED"
+)
+
+func (e *UploadStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UploadStatus(s)
+	case string:
+		*e = UploadStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UploadStatus: %T", src)
+	}
+	return nil
+}
+
+type NullUploadStatus struct {
+	UploadStatus UploadStatus `json:"upload_status"`
+	Valid        bool         `json:"valid"` // Valid is true if UploadStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUploadStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.UploadStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UploadStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUploadStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UploadStatus), nil
+}
 
 type Account struct {
 	AccountID      int32          `json:"account_id"`
@@ -64,6 +111,19 @@ type Entry struct {
 	CreatedAt time.Time      `json:"created_at"`
 }
 
+type FileMetadatum struct {
+	ID             int32         `json:"id"`
+	UploadJobsID   string        `json:"upload_jobs_id"`
+	S3Url          string        `json:"s3_url"`
+	Checksum       string        `json:"checksum"`
+	MimeType       string        `json:"mime_type"`
+	Width          sql.NullInt32 `json:"width"`
+	Height         sql.NullInt32 `json:"height"`
+	AdditionalData pgtype.JSONB  `json:"additional_data"`
+	CreatedAt      time.Time     `json:"created_at"`
+	UpdatedAt      time.Time     `json:"updated_at"`
+}
+
 type Transaction struct {
 	TransactionID     int32          `json:"transaction_id"`
 	FromAccountID     sql.NullInt32  `json:"from_account_id"`
@@ -96,6 +156,21 @@ type TransactionType struct {
 	IsActive    bool      `json:"is_active"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type UploadJob struct {
+	ID           string         `json:"id"`
+	FileName     string         `json:"file_name"`
+	FileSize     int64          `json:"file_size"`
+	ContentType  string         `json:"content_type"`
+	TempPath     string         `json:"temp_path"`
+	TargetPath   string         `json:"target_path"`
+	UserID       int32          `json:"user_id"`
+	Status       UploadStatus   `json:"status"`
+	ErrorMessage sql.NullString `json:"error_message"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	CompletedAt  sql.NullTime   `json:"completed_at"`
 }
 
 type User struct {

@@ -27,7 +27,25 @@ wait_for_postgres() {
 run_migrations() {
     if [ "$MIGRATE_ON_STARTUP" = "true" ]; then
         echo "Running database migrations for $APP_ENV environment..."
-        migrate -path /app/db/migration -database "$DB_SOURCE" -verbose up
+        
+        migrate_output=$(migrate -path /app/db/migration -database "$DB_SOURCE" -verbose up 2>&1)
+        migrate_status=$?
+        
+        if echo "$migrate_output" | grep -q "Dirty database version"; then
+            echo "Detected dirty database. Attempting to fix..."
+            dirty_version=$(echo "$migrate_output" | grep -o "Dirty database version [0-9]*" | awk '{print $4}')
+            
+            echo "Forcing version $dirty_version to fix dirty state..."
+            migrate -path /app/db/migration -database "$DB_SOURCE" force $dirty_version
+            
+            echo "Retrying migrations..."
+            migrate -path /app/db/migration -database "$DB_SOURCE" -verbose up
+        elif [ $migrate_status -ne 0 ]; then
+            echo "Migration failed with error:"
+            echo "$migrate_output"
+            exit 1
+        fi
+        
         echo "Migrations completed!"
     else
         echo "Skipping migrations..."

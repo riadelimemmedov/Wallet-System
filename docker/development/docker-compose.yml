@@ -123,44 +123,44 @@ services:
     networks:
       - bank-network
 
-  upload_worker:
-    container_name: simple_bank_upload_worker
-    build:
-      context: ../..
-      dockerfile: docker/development/Dockerfile.worker
-    restart: on-failure:5
-    env_file:
-      - ./.env
-    volumes:
-      - ../..:/app
-      - upload-temp:/tmp/uploads
-    environment:
-      # Database settings
-      - DB_SOURCE=${DEV_DB_SOURCE}
-      # Redis settings
-      - REDIS_HOST=${DEV_REDIS_HOST:-redis}
-      - REDIS_PORT=${DEV_REDIS_PORT:-6379}
-      # RabbitMQ settings
-      - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
-      - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
-      - RABBITMQ_USER=${RABBITMQ_USER:-admin}
-      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
-      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-/}
-      # S3 settings
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - AWS_BUCKET=${AWS_BUCKET:-my-upload-bucket}
-      - AWS_PREFIX=${AWS_PREFIX:-uploads}
-      # Worker settings
-      - UPLOAD_TEMP_DIR=${UPLOAD_TEMP_DIR:-/tmp/uploads}
-      - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-10}
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    command: go run cmd/worker/main.go
-    networks:
-      - bank-network
+  # upload_worker:
+  #   container_name: simple_bank_upload_worker
+  #   build:
+  #     context: ../..
+  #     dockerfile: docker/development/Dockerfile.worker
+  #   restart: on-failure:5
+  #   env_file:
+  #     - ./.env
+  #   volumes:
+  #     - ../..:/app
+  #     - upload-temp:/tmp/uploads
+  #   environment:
+  #     # Database settings
+  #     - DB_SOURCE=${DEV_DB_SOURCE}
+  #     # Redis settings
+  #     - REDIS_HOST=${DEV_REDIS_HOST:-redis}
+  #     - REDIS_PORT=${DEV_REDIS_PORT:-6379}
+  #     # RabbitMQ settings
+  #     - RABBITMQ_HOST=${RABBITMQ_HOST:-rabbitmq}
+  #     - RABBITMQ_PORT=${RABBITMQ_PORT:-5672}
+  #     - RABBITMQ_USER=${RABBITMQ_USER:-admin}
+  #     - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-admin123}
+  #     - RABBITMQ_VHOST=${RABBITMQ_VHOST:-/}
+  #     # S3 settings
+  #     - AWS_REGION=${AWS_REGION:-us-east-1}
+  #     - AWS_BUCKET=${AWS_BUCKET:-my-upload-bucket}
+  #     - AWS_PREFIX=${AWS_PREFIX:-uploads}
+  #     # Worker settings
+  #     - UPLOAD_TEMP_DIR=${UPLOAD_TEMP_DIR:-/tmp/uploads}
+  #     - WORKER_CONCURRENCY=${WORKER_CONCURRENCY:-10}
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #   command: go run cmd/worker/main.go
+  #   networks:
+  #     - bank-network
 
 networks:
   bank-network:
