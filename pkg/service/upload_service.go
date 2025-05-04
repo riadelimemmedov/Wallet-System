@@ -88,7 +88,7 @@ HandleFileUpload handles the file upload process:
 3. Publishes the job to RabbitMQ queue
 4. Returns the job ID for status tracking
 */
-func (s *UploadService) HandleFileUpload(ctx context.Context, file *multipart.FileHeader, userID int64, targetPath string) (string, error) {
+func (s *UploadService) HandleFileUpload(ctx context.Context, file *multipart.FileHeader, userID int32, targetPath string) (string, error) {
 	if file.Size > s.maxUploadSize {
 		logger.GetLogger().Error("file size exceeds limit", zap.Int64("size", file.Size), zap.Int64("limit", s.maxUploadSize))
 		return "", fmt.Errorf("file size exceeds limit: %d > %d", file.Size, s.maxUploadSize)

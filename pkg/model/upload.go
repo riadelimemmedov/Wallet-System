@@ -21,7 +21,7 @@ type UploadJob struct {
 	ContentType string       `json:"content_type"`
 	TempPath    string       `json:"temp_path"`
 	TargetPath  string       `json:"target_path"`
-	UserID      int64        `json:"user_id"`
+	UserID      int32        `json:"user_id"`
 	Status      UploadStatus `json:"status"`
 	Error       string       `json:"error,omitempty"`
 	CreatedAt   time.Time    `json:"created_at"`
