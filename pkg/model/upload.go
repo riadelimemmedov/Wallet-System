@@ -31,7 +31,7 @@ type UploadJob struct {
 
 // FileMetadata represents additional information about an uploaded file
 type FileMetadata struct {
-	ID             string    `json:"id"`
+	ID             int32     `json:"id"`
 	S3URL          string    `json:"s3_url"`
 	Checksum       string    `json:"checksum,omitempty"`
 	MimeType       string    `json:"mime_type"`

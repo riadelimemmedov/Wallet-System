@@ -3,6 +3,7 @@ package pkg_utils
 import (
 	"fmt"
 
+	"github.com/jackc/pgtype"
 	db "github.com/riad/banksystemendtoend/db/sqlc"
 	"github.com/riad/banksystemendtoend/pkg/model"
 )
@@ -40,4 +41,13 @@ func ConvertModelStatusToDBStatus(status model.UploadStatus) (db.UploadStatus, e
 	default:
 		return db.UploadStatusFAILED, fmt.Errorf("invalid upload status: %s", status)
 	}
+}
+
+// BytesToPgJSONB converts a []byte containing JSON data to pgtype.JSONB.
+func BytesToPgJSONB(data []byte) pgtype.JSONB {
+	var jsonbData pgtype.JSONB
+	if err := jsonbData.Set(data); err != nil {
+		return pgtype.JSONB{}
+	}
+	return jsonbData
 }

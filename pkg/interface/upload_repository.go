@@ -12,7 +12,7 @@ type UploadRepository interface {
 	CreateUploadJob(ctx context.Context, job *model.UploadJob) error
 
 	// GetUploadJob retrieves an upload job by ID
-	GetUploadJob(ctx context.Context, id string) (*model.UploadJob, error)
+	GetUploadJob(ctx context.Context, id int64) (*model.UploadJob, error)
 
 	// UpdateUploadJob updates an existing upload job
 	UpdateUploadJob(ctx context.Context, job *model.UploadJob) error

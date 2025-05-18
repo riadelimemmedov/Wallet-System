@@ -183,7 +183,7 @@ SELECT id, file_name, file_size, content_type, temp_path, target_path, user_id, 
 WHERE id = $1
 `
 
-func (q *Queries) GetUploadJob(ctx context.Context, id string) (UploadJob, error) {
+func (q *Queries) GetUploadJob(ctx context.Context, id int64) (UploadJob, error) {
 	row := q.db.QueryRow(ctx, getUploadJob, id)
 	var i UploadJob
 	err := row.Scan(
